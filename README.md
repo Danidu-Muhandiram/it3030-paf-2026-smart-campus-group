@@ -25,21 +25,20 @@ Monorepo containing the backend Spring Boot service and the React (Vite) fronten
 │           ├── application.properties
 │           └── static|templates  # Static assets placeholders
 │
-├── frontend/                     # React + TypeScript app scaffolded with Vite
+├── frontend/                     # React (JavaScript) app scaffolded with Vite
 │   ├── package.json              # npm scripts and dependencies
-│   ├── vite.config.ts            # Vite configuration
-│   ├── tsconfig*.json            # TypeScript configs
-│   ├── public/
+│   ├── vite.config.js            # Vite configuration with Tailwind CSS plugin
+│   ├── public/                   # Static assets
 │   └── src/
-│       ├── api/                  # Axios instances and API helpers (placeholder)
-│       ├── auth/                 # Future auth helpers/guards
-│       ├── components/           # Shared UI components
-│       ├── pages/                # Route-level screens
-│       ├── routes/               # React Router configuration
-│       ├── layout/               # Layout shells/navigation
-│       ├── context/              # React context providers
-│       ├── App.tsx               # Root component
-│       └── main.tsx              # Entry point
+│       ├── app/                  # App-level setup (App.jsx, routes.jsx)
+│       ├── assets/               # Images, logos
+│       ├── components/           # Shared reusable components
+│       │   ├── ui/               # Button, Input, Card, etc.
+│       │   └── layout/           # Sidebar, Footer, etc.
+│       ├── features/             # Business modules (e.g., auth)
+│       ├── services/             # Axios config (axios.js)
+│       ├── styles/               # Global styles (global.css)
+│       └── main.jsx              # Entry point
 │
 ├── docs/                         # Additional documentation (if any)
 └── README.md                     # This document
@@ -57,11 +56,12 @@ Monorepo containing the backend Spring Boot service and the React (Vite) fronten
 
 ## Current Frontend Highlights
 
-- Generated with Vite + React + TypeScript (`npm create vite@latest frontend -- --template react-ts`).
-- Base folders inside `frontend/src` already created for `api`, `auth`, `components`, `pages`, `routes`, `layout`, and `context`.
+- Generated with Vite + React (JavaScript) (`npm create vite@latest frontend -- --template react`).
+- Modular architecture organizing logic by features, with app-level routing, services, and shared UI components.
 - Core dependencies installed:
+  - `react-router-dom` v6+
+  - `tailwindcss` (with `@tailwindcss/vite`)
   - `axios`
-  - `react-router-dom`
 
 ## Running the Apps
 
