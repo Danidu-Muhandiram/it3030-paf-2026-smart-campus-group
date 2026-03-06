@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Rocket, Settings, CheckCircle2, Building2 } from 'lucide-react';
+import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
 
 export const RegisterPage = () => {
     return (
-        <div className="h-screen bg-[#F8FAFC] flex font-sans overflow-hidden">
+        <div className="min-h-screen bg-bg-main flex flex-col md:flex-row font-sans">
 
             {/* Left section */}
-            <div className="hidden md:flex flex-col justify-between w-1/2 bg-[#1E3A8A] text-white p-8 lg:p-12 relative overflow-hidden">
+            <div className="hidden md:flex flex-col justify-between w-1/2 bg-primary text-white p-8 lg:p-12 relative overflow-hidden">
 
                 {/* Background effects */}
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s' }}></div>
@@ -23,13 +23,17 @@ export const RegisterPage = () => {
 
                 <div className="relative z-10 flex flex-col h-full">
 
-                    {/* Top logo */}
-                    <div className="mb-8">
+                    {/* Top logo & navigation */}
+                    <div className="mb-8 w-full flex items-center justify-between">
                         <Link to="/" className="text-2xl font-bold text-white hover:text-blue-100 flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center">
                                 <Building2 className="w-5 h-5 text-white" />
                             </div>
                             SLIIT Smart Campus
+                        </Link>
+
+                        <Link to="/" className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 flex items-center justify-center transition-colors shrink-0">
+                            <ArrowLeft className="w-5 h-5 text-white" />
                         </Link>
                     </div>
 
@@ -39,7 +43,7 @@ export const RegisterPage = () => {
                             Join the Network
                         </span>
 
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-4 leading-tight">
+                        <h2 className="text-3xl lg:text-4xl font-bold mb-10 leading-tight">
                             Streamline your campus experience today.
                         </h2>
 
@@ -71,30 +75,34 @@ export const RegisterPage = () => {
                         </div>
                     </div>
 
-                    <div className="mt-8 text-blue-300/60 text-sm">
+                    <div className="mt-10 text-blue-300/60 text-sm">
                         © 2026 SLIIT Smart Campus Operations Hub
                     </div>
                 </div>
             </div>
 
             {/* Right section - form */}
-            <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto">
+            <div className="w-full md:w-1/2 flex flex-col justify-start md:justify-center items-center py-8 px-4 sm:p-8 relative">
 
-                {/* Mobile header view */}
-                <div className="md:hidden absolute top-6 left-6 z-10 w-full pr-12 flex justify-between items-center">
-                    <Link to="/" className="text-xl font-bold text-[#1E3A8A] flex items-center gap-2">
-                        <div className="w-7 h-7 rounded bg-[#1E3A8A] flex items-center justify-center">
+                {/* Mobile header view & navigation */}
+                <div className="md:hidden w-full flex items-center justify-between mb-8 px-2 border-b border-gray-100 pb-4">
+                    <Link to="/" className="text-xl font-bold text-primary flex items-center gap-2">
+                        <div className="w-7 h-7 rounded bg-primary flex items-center justify-center shrink-0">
                             <Building2 className="w-4 h-4 text-white" />
                         </div>
                         Smart Campus
                     </Link>
+
+                    <Link to="/" className="w-10 h-10 rounded-full bg-white border border-gray-200 hover:bg-gray-50 flex items-center justify-center transition-colors shadow-sm shrink-0">
+                        <ArrowLeft className="w-5 h-5 text-text-muted" />
+                    </Link>
                 </div>
 
-                <div className="w-full max-w-[400px] mt-12 md:mt-0">
+                <div className="w-full max-w-[400px]">
                     <div className="mb-6 text-center md:text-left">
-                        <h1 className="text-2xl font-bold text-[#0f172a] mb-2">Create an account</h1>
-                        <p className="text-[#475569] text-sm">
-                            Already have an account? <a href="#" className="text-[#1E3A8A] font-medium hover:underline">Log in here</a>
+                        <h1 className="text-2xl font-bold text-text-main mb-2">Create an account</h1>
+                        <p className="text-text-muted text-md">
+                            Already have an account? <a href="#" className="text-primary font-medium hover:underline">Log in here</a>
                         </p>
                     </div>
 
@@ -102,37 +110,37 @@ export const RegisterPage = () => {
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full">
-                                <label className="text-xs font-semibold text-[#334155]">First Name</label>
+                                <label className="text-md font-semibold text-text-muted">First Name</label>
                                 <input
                                     type="text"
                                     placeholder="Harsha"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
                             <div className="space-y-1 w-full">
-                                <label className="text-xs font-semibold text-[#334155]">Last Name</label>
+                                <label className="text-md font-semibold text-text-muted">Last Name</label>
                                 <input
                                     type="text"
                                     placeholder="Fernando"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-[#334155]">University Email</label>
+                            <label className="text-md font-semibold text-text-muted">University Email</label>
                             <input
                                 type="email"
                                 placeholder="idnumber@my.sliit.lk"
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full sm:w-1/3">
-                                <label className="text-xs font-semibold text-[#334155]">Role</label>
+                                <label className="text-md font-semibold text-text-muted">Role</label>
                                 <div className="relative">
-                                    <select className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm appearance-none cursor-pointer text-[#0f172a] bg-white">
+                                    <select className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm appearance-none cursor-pointer text-text-main bg-white">
                                         <option value="student">Student</option>
                                         <option value="staff">Staff</option>
                                         <option value="faculty">Faculty</option>
@@ -146,38 +154,38 @@ export const RegisterPage = () => {
                             </div>
 
                             <div className="space-y-1 w-full sm:w-2/3">
-                                <label className="text-xs font-semibold text-[#334155]">ID Number</label>
+                                <label className="text-md font-semibold text-text-muted">ID Number</label>
                                 <input
                                     type="text"
                                     placeholder="e.g. IT2612345678"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-[#334155]">Password</label>
+                            <label className="text-md font-semibold text-text-muted">Password</label>
                             <input
                                 type="password"
                                 placeholder="••••••••"
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
-                            <p className="text-[11px] text-[#64748B] mt-1.5">Must be at least 8 characters long</p>
+                            <p className="text-[12px] text-text-light mt-1.5">Must be at least 8 characters long</p>
                         </div>
 
                         <div className="flex items-start gap-2.5 pt-2">
                             <div className="flex items-center h-4 mt-0.5">
                                 <input
                                     type="checkbox"
-                                    className="w-4 h-4 border-gray-300 rounded text-[#1E3A8A] focus:ring-[#1E3A8A] cursor-pointer"
+                                    className="w-4 h-4 border-gray-300 rounded text-primary focus:ring-primary cursor-pointer"
                                 />
                             </div>
-                            <label className="text-xs text-[#475569]">
-                                I agree to the <a href="#" className="font-medium text-[#1E3A8A] hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-[#1E3A8A] hover:underline">Privacy Policy</a>
+                            <label className="text-md text-text-muted">
+                                I agree to the <a href="#" className="font-medium text-primary hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-primary hover:underline">Privacy Policy</a>
                             </label>
                         </div>
 
-                        <button className="w-full bg-[#1E3A8A] hover:bg-[#172D6B] text-white font-medium py-3 px-4 rounded-lg mt-6 flex justify-center items-center gap-2 transition-colors">
+                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-4 rounded-lg mt-6 flex justify-center items-center gap-2 transition-colors">
                             Create Account
                             <Rocket className="w-4 h-4" />
                         </button>
