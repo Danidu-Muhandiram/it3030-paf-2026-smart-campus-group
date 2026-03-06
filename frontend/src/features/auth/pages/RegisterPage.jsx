@@ -39,7 +39,7 @@ export const RegisterPage = () => {
                             Join the Network
                         </span>
 
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-4 leading-tight">
+                        <h2 className="text-3xl lg:text-4xl font-bold mb-10 leading-tight">
                             Streamline your campus experience today.
                         </h2>
 
@@ -71,7 +71,7 @@ export const RegisterPage = () => {
                         </div>
                     </div>
 
-                    <div className="mt-8 text-blue-300/60 text-sm">
+                    <div className="mt-10 text-blue-300/60 text-sm">
                         © 2026 SLIIT Smart Campus Operations Hub
                     </div>
                 </div>
@@ -93,7 +93,7 @@ export const RegisterPage = () => {
                 <div className="w-full max-w-[400px]">
                     <div className="mb-6 text-center md:text-left">
                         <h1 className="text-2xl font-bold text-[#0f172a] mb-2">Create an account</h1>
-                        <p className="text-[#475569] text-sm">
+                        <p className="text-[#475569] text-md">
                             Already have an account? <a href="#" className="text-[#1E3A8A] font-medium hover:underline">Log in here</a>
                         </p>
                     </div>
@@ -102,7 +102,7 @@ export const RegisterPage = () => {
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full">
-                                <label className="text-xs font-semibold text-[#334155]">First Name</label>
+                                <label className="text-md font-semibold text-[#334155]">First Name</label>
                                 <input
                                     type="text"
                                     placeholder="Harsha"
@@ -110,7 +110,7 @@ export const RegisterPage = () => {
                                 />
                             </div>
                             <div className="space-y-1 w-full">
-                                <label className="text-xs font-semibold text-[#334155]">Last Name</label>
+                                <label className="text-md font-semibold text-[#334155]">Last Name</label>
                                 <input
                                     type="text"
                                     placeholder="Fernando"
@@ -120,7 +120,7 @@ export const RegisterPage = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-[#334155]">University Email</label>
+                            <label className="text-md font-semibold text-[#334155]">University Email</label>
                             <input
                                 type="email"
                                 placeholder="idnumber@my.sliit.lk"
@@ -130,7 +130,7 @@ export const RegisterPage = () => {
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full sm:w-1/3">
-                                <label className="text-xs font-semibold text-[#334155]">Role</label>
+                                <label className="text-md font-semibold text-[#334155]">Role</label>
                                 <div className="relative">
                                     <select className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm appearance-none cursor-pointer text-[#0f172a] bg-white">
                                         <option value="student">Student</option>
@@ -146,7 +146,7 @@ export const RegisterPage = () => {
                             </div>
 
                             <div className="space-y-1 w-full sm:w-2/3">
-                                <label className="text-xs font-semibold text-[#334155]">ID Number</label>
+                                <label className="text-md font-semibold text-[#334155]">ID Number</label>
                                 <input
                                     type="text"
                                     placeholder="e.g. IT2612345678"
@@ -156,13 +156,13 @@ export const RegisterPage = () => {
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-xs font-semibold text-[#334155]">Password</label>
+                            <label className="text-md font-semibold text-[#334155]">Password</label>
                             <input
                                 type="password"
                                 placeholder="••••••••"
                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
                             />
-                            <p className="text-[11px] text-[#64748B] mt-1.5">Must be at least 8 characters long</p>
+                            <p className="text-[12px] text-[#64748B] mt-1.5">Must be at least 8 characters long</p>
                         </div>
 
                         <div className="flex items-start gap-2.5 pt-2">
@@ -172,7 +172,7 @@ export const RegisterPage = () => {
                                     className="w-4 h-4 border-gray-300 rounded text-[#1E3A8A] focus:ring-[#1E3A8A] cursor-pointer"
                                 />
                             </div>
-                            <label className="text-xs text-[#475569]">
+                            <label className="text-md text-[#475569]">
                                 I agree to the <a href="#" className="font-medium text-[#1E3A8A] hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-[#1E3A8A] hover:underline">Privacy Policy</a>
                             </label>
                         </div>
