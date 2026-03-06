@@ -4,7 +4,7 @@ import { Rocket, Settings, CheckCircle2, Building2 } from 'lucide-react';
 
 export const RegisterPage = () => {
     return (
-        <div className="h-screen bg-[#F8FAFC] flex font-sans overflow-hidden">
+        <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
 
             {/* Left section */}
             <div className="hidden md:flex flex-col justify-between w-1/2 bg-[#1E3A8A] text-white p-8 lg:p-12 relative overflow-hidden">
@@ -78,10 +78,10 @@ export const RegisterPage = () => {
             </div>
 
             {/* Right section - form */}
-            <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 sm:p-8 relative overflow-y-auto">
+            <div className="w-full md:w-1/2 flex flex-col justify-start md:justify-center items-center py-8 px-4 sm:p-8 relative">
 
                 {/* Mobile header view */}
-                <div className="md:hidden absolute top-6 left-6 z-10 w-full pr-12 flex justify-between items-center">
+                <div className="md:hidden w-full flex justify-between items-center mb-10 px-2">
                     <Link to="/" className="text-xl font-bold text-[#1E3A8A] flex items-center gap-2">
                         <div className="w-7 h-7 rounded bg-[#1E3A8A] flex items-center justify-center">
                             <Building2 className="w-4 h-4 text-white" />
@@ -90,7 +90,7 @@ export const RegisterPage = () => {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[400px] mt-12 md:mt-0">
+                <div className="w-full max-w-[400px]">
                     <div className="mb-6 text-center md:text-left">
                         <h1 className="text-2xl font-bold text-[#0f172a] mb-2">Create an account</h1>
                         <p className="text-[#475569] text-sm">
