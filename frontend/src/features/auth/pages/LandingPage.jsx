@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export const LandingPage = () => {
     return (
@@ -21,9 +22,9 @@ export const LandingPage = () => {
                         Login
                     </button>
 
-                    <button className="w-full sm:w-auto px-[22px] py-[12px] sm:py-[10px] rounded-lg text-base font-medium transition-all duration-200 outline-none bg-transparent text-[#1E3A8A] border-2 border-[#1E3A8A] hover:bg-blue-900/5">
+                    <Link to="/register" className="w-full sm:w-auto px-[22px] py-[12px] sm:py-[10px] rounded-lg text-base font-medium transition-all duration-200 outline-none bg-transparent text-[#1E3A8A] border-2 border-[#1E3A8A] hover:bg-blue-900/5 flex items-center justify-center">
                         Register
-                    </button>
+                    </Link>
                 </div>
 
                 <p className="text-xs text-[#94A3B8] mt-2">
