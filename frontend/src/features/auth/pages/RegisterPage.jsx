@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Rocket, Settings, CheckCircle2, Building2 } from 'lucide-react';
+import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
 
 export const RegisterPage = () => {
     return (
@@ -23,13 +23,17 @@ export const RegisterPage = () => {
 
                 <div className="relative z-10 flex flex-col h-full">
 
-                    {/* Top logo */}
-                    <div className="mb-8">
+                    {/* Top logo & navigation */}
+                    <div className="mb-8 w-full flex items-center justify-between">
                         <Link to="/" className="text-2xl font-bold text-white hover:text-blue-100 flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center">
                                 <Building2 className="w-5 h-5 text-white" />
                             </div>
                             SLIIT Smart Campus
+                        </Link>
+
+                        <Link to="/" className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 flex items-center justify-center transition-colors shrink-0">
+                            <ArrowLeft className="w-5 h-5 text-white" />
                         </Link>
                     </div>
 
@@ -80,13 +84,17 @@ export const RegisterPage = () => {
             {/* Right section - form */}
             <div className="w-full md:w-1/2 flex flex-col justify-start md:justify-center items-center py-8 px-4 sm:p-8 relative">
 
-                {/* Mobile header view */}
-                <div className="md:hidden w-full flex justify-between items-center mb-10 px-2">
+                {/* Mobile header view & navigation */}
+                <div className="md:hidden w-full flex items-center justify-between mb-8 px-2 border-b border-gray-100 pb-4">
                     <Link to="/" className="text-xl font-bold text-primary flex items-center gap-2">
-                        <div className="w-7 h-7 rounded bg-primary flex items-center justify-center">
+                        <div className="w-7 h-7 rounded bg-primary flex items-center justify-center shrink-0">
                             <Building2 className="w-4 h-4 text-white" />
                         </div>
                         Smart Campus
+                    </Link>
+
+                    <Link to="/" className="w-10 h-10 rounded-full bg-white border border-gray-200 hover:bg-gray-50 flex items-center justify-center transition-colors shadow-sm shrink-0">
+                        <ArrowLeft className="w-5 h-5 text-text-muted" />
                     </Link>
                 </div>
 
