@@ -4,10 +4,10 @@ import { Rocket, Settings, CheckCircle2, Building2 } from 'lucide-react';
 
 export const RegisterPage = () => {
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans">
+        <div className="min-h-screen bg-bg-main flex flex-col md:flex-row font-sans">
 
             {/* Left section */}
-            <div className="hidden md:flex flex-col justify-between w-1/2 bg-[#1E3A8A] text-white p-8 lg:p-12 relative overflow-hidden">
+            <div className="hidden md:flex flex-col justify-between w-1/2 bg-primary text-white p-8 lg:p-12 relative overflow-hidden">
 
                 {/* Background effects */}
                 <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s' }}></div>
@@ -82,8 +82,8 @@ export const RegisterPage = () => {
 
                 {/* Mobile header view */}
                 <div className="md:hidden w-full flex justify-between items-center mb-10 px-2">
-                    <Link to="/" className="text-xl font-bold text-[#1E3A8A] flex items-center gap-2">
-                        <div className="w-7 h-7 rounded bg-[#1E3A8A] flex items-center justify-center">
+                    <Link to="/" className="text-xl font-bold text-primary flex items-center gap-2">
+                        <div className="w-7 h-7 rounded bg-primary flex items-center justify-center">
                             <Building2 className="w-4 h-4 text-white" />
                         </div>
                         Smart Campus
@@ -92,9 +92,9 @@ export const RegisterPage = () => {
 
                 <div className="w-full max-w-[400px]">
                     <div className="mb-6 text-center md:text-left">
-                        <h1 className="text-2xl font-bold text-[#0f172a] mb-2">Create an account</h1>
-                        <p className="text-[#475569] text-md">
-                            Already have an account? <a href="#" className="text-[#1E3A8A] font-medium hover:underline">Log in here</a>
+                        <h1 className="text-2xl font-bold text-text-main mb-2">Create an account</h1>
+                        <p className="text-text-muted text-md">
+                            Already have an account? <a href="#" className="text-primary font-medium hover:underline">Log in here</a>
                         </p>
                     </div>
 
@@ -102,37 +102,37 @@ export const RegisterPage = () => {
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full">
-                                <label className="text-md font-semibold text-[#334155]">First Name</label>
+                                <label className="text-md font-semibold text-text-muted">First Name</label>
                                 <input
                                     type="text"
                                     placeholder="Harsha"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
                             <div className="space-y-1 w-full">
-                                <label className="text-md font-semibold text-[#334155]">Last Name</label>
+                                <label className="text-md font-semibold text-text-muted">Last Name</label>
                                 <input
                                     type="text"
                                     placeholder="Fernando"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-md font-semibold text-[#334155]">University Email</label>
+                            <label className="text-md font-semibold text-text-muted">University Email</label>
                             <input
                                 type="email"
                                 placeholder="idnumber@my.sliit.lk"
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full sm:w-1/3">
-                                <label className="text-md font-semibold text-[#334155]">Role</label>
+                                <label className="text-md font-semibold text-text-muted">Role</label>
                                 <div className="relative">
-                                    <select className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm appearance-none cursor-pointer text-[#0f172a] bg-white">
+                                    <select className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm appearance-none cursor-pointer text-text-main bg-white">
                                         <option value="student">Student</option>
                                         <option value="staff">Staff</option>
                                         <option value="faculty">Faculty</option>
@@ -146,38 +146,38 @@ export const RegisterPage = () => {
                             </div>
 
                             <div className="space-y-1 w-full sm:w-2/3">
-                                <label className="text-md font-semibold text-[#334155]">ID Number</label>
+                                <label className="text-md font-semibold text-text-muted">ID Number</label>
                                 <input
                                     type="text"
                                     placeholder="e.g. IT2612345678"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-md font-semibold text-[#334155]">Password</label>
+                            <label className="text-md font-semibold text-text-muted">Password</label>
                             <input
                                 type="password"
                                 placeholder="••••••••"
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]/20 focus:border-[#1E3A8A] text-sm text-[#0f172a]"
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
-                            <p className="text-[12px] text-[#64748B] mt-1.5">Must be at least 8 characters long</p>
+                            <p className="text-[12px] text-text-light mt-1.5">Must be at least 8 characters long</p>
                         </div>
 
                         <div className="flex items-start gap-2.5 pt-2">
                             <div className="flex items-center h-4 mt-0.5">
                                 <input
                                     type="checkbox"
-                                    className="w-4 h-4 border-gray-300 rounded text-[#1E3A8A] focus:ring-[#1E3A8A] cursor-pointer"
+                                    className="w-4 h-4 border-gray-300 rounded text-primary focus:ring-primary cursor-pointer"
                                 />
                             </div>
-                            <label className="text-md text-[#475569]">
-                                I agree to the <a href="#" className="font-medium text-[#1E3A8A] hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-[#1E3A8A] hover:underline">Privacy Policy</a>
+                            <label className="text-md text-text-muted">
+                                I agree to the <a href="#" className="font-medium text-primary hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-primary hover:underline">Privacy Policy</a>
                             </label>
                         </div>
 
-                        <button className="w-full bg-[#1E3A8A] hover:bg-[#172D6B] text-white font-medium py-3 px-4 rounded-lg mt-6 flex justify-center items-center gap-2 transition-colors">
+                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-4 rounded-lg mt-6 flex justify-center items-center gap-2 transition-colors">
                             Create Account
                             <Rocket className="w-4 h-4" />
                         </button>
