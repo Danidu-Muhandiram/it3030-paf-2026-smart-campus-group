@@ -102,7 +102,7 @@ export const RegisterPage = () => {
                     <div className="mb-6 text-center md:text-left">
                         <h1 className="text-2xl font-bold text-text-main mb-2">Create an account</h1>
                         <p className="text-text-muted text-md">
-                            Already have an account? <a href="#" className="text-primary font-medium hover:underline">Log in here</a>
+                            Already have an account? <Link to="/login" className="text-primary font-medium hover:underline">Log in here</Link>
                         </p>
                     </div>
 

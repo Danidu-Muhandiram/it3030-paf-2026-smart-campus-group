@@ -18,9 +18,9 @@ export const LandingPage = () => {
 
                 {/* Login and register buttons */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-6 w-full max-w-[300px] sm:max-w-none justify-center">
-                    <button className="w-full sm:w-auto px-[22px] py-[12px] sm:py-[10px] rounded-lg text-base font-medium transition-all duration-200 outline-none bg-primary text-white border-2 border-primary hover:bg-primary-hover hover:border-primary-hover">
+                    <Link to="/login" className="w-full sm:w-auto px-[22px] py-[12px] sm:py-[10px] rounded-lg text-base font-medium transition-all duration-200 outline-none bg-primary text-white border-2 border-primary hover:bg-primary-hover hover:border-primary-hover flex items-center justify-center">
                         Login
-                    </button>
+                    </Link>
 
                     <Link to="/register" className="w-full sm:w-auto px-[22px] py-[12px] sm:py-[10px] rounded-lg text-base font-medium transition-all duration-200 outline-none bg-transparent text-primary border-2 border-primary hover:bg-blue-900/5 flex items-center justify-center">
                         Register
