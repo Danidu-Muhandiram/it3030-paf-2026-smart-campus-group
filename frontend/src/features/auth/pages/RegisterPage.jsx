@@ -1,23 +1,49 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const RegisterPage = () => {
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.15, delayChildren: 0.2 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-bg-main flex flex-col md:flex-row font-sans">
+        <div className="h-screen overflow-hidden bg-bg-main flex flex-col md:flex-row font-sans">
 
             {/* Left section */}
             <div className="hidden md:flex flex-col justify-between w-1/2 bg-primary text-white p-8 lg:p-12 relative overflow-hidden">
 
                 {/* Background effects */}
-                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s' }}></div>
-                <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '6s' }}></div>
+                <motion.div
+                    className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-700/60 rounded-full blur-[90px] z-0"
+                    animate={{ scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, -40, 0] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.div
+                    className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-700/50 rounded-full blur-[110px] z-0"
+                    animate={{ scale: [1, 1.3, 1], x: [0, -50, 0], y: [0, 50, 0] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                />
                 <div
-                    className="absolute inset-0 z-0 opacity-20"
+                    className="absolute inset-0 z-[1] opacity-30 mix-blend-overlay"
                     style={{
-                        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-                        backgroundSize: '20px 20px',
-                        maskImage: 'linear-gradient(to bottom, white, transparent)' // Fades out the pattern at the bottom
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1.5px, transparent 0)',
+                        backgroundSize: '24px 24px',
+                        maskImage: 'linear-gradient(to bottom, white 60%, transparent 100%)'
                     }}
                 ></div>
 
@@ -37,52 +63,57 @@ export const RegisterPage = () => {
                         </Link>
                     </div>
 
-                    {/* Main text content */}
-                    <div className="flex-grow flex flex-col justify-center max-w-lg">
-                        <span className="py-1 px-3 rounded-full bg-blue-800/60 border border-blue-700/50 text-blue-200 text-xs font-semibold uppercase mb-4 w-max">
+                    {/* Main text content with stagger animation */}
+                    <motion.div
+                        className="flex-grow flex flex-col justify-center max-w-lg"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <motion.span variants={itemVariants} className="py-1.5 px-3.5 rounded-full bg-blue-800/40 border border-blue-600/50 text-blue-200 text-[11px] uppercase tracking-wider font-bold mb-6 w-max shadow-[0_0_20px_rgba(37,99,235,0.2)] backdrop-blur-md">
                             Join the Network
-                        </span>
+                        </motion.span>
 
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-10 leading-tight">
-                            Streamline your campus experience today.
-                        </h2>
+                        <motion.h2 variants={itemVariants} className="text-3xl lg:text-4xl font-extrabold mb-6 leading-[1.15] tracking-tight">
+                            Streamline your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-white to-blue-400">campus experience</span> today.
+                        </motion.h2>
 
-                        <p className="text-blue-100/90 text-base lg:text-lg mb-8">
-                            Join the SLIIT smart campus hub to seamlessly manage facilities, bookings, and operations all in one unified platform.
-                        </p>
+                        <motion.p variants={itemVariants} className="text-blue-100/90 text-[15px] lg:text-base mb-8 leading-relaxed font-light">
+                            Join the SLIIT smart campus hub to seamlessly manage facilities, bookings, and operations all in one unified, intelligent platform.
+                        </motion.p>
 
                         {/* Feature list */}
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-4 text-blue-100 hover:translate-x-2 transition-transform">
-                                <div className="w-10 h-10 rounded-xl bg-blue-800/40 backdrop-blur-md flex items-center justify-center border border-blue-700/50">
-                                    <CheckCircle2 className="w-5 h-5 text-blue-300" />
+                        <motion.div variants={itemVariants} className="space-y-4">
+                            <div className="group flex items-start gap-4 text-blue-100 transition-all hover:-translate-y-1 hover:bg-white/5 p-3 -ml-3 rounded-2xl cursor-default border border-transparent hover:border-white/10">
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 group-hover:scale-110 shadow-[0_0_15px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md flex items-center justify-center border border-blue-500/20 transition-all duration-300 shrink-0">
+                                    <CheckCircle2 className="w-5 h-5 text-blue-300 group-hover:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-white mt-1">Real-time Bookings</h4>
-                                    <p className="text-sm text-blue-200/80">Reserve facilities instantly with our live availability calendar.</p>
+                                    <h4 className="font-semibold text-white mt-0.5 text-base group-hover:text-blue-100 transition-colors">Real-time Bookings</h4>
+                                    <p className="text-sm text-blue-200/70 mt-1 leading-relaxed">Reserve facilities instantly with our live availability calendar and streamlined interface.</p>
                                 </div>
                             </div>
 
-                            <div className="flex items-start gap-4 text-blue-100 hover:translate-x-2 transition-transform">
-                                <div className="w-10 h-10 rounded-xl bg-blue-800/40 backdrop-blur-md flex items-center justify-center border border-blue-700/50">
-                                    <Settings className="w-5 h-5 text-blue-300" />
+                            <div className="group flex items-start gap-4 text-blue-100 transition-all hover:-translate-y-1 hover:bg-white/5 p-3 -ml-3 rounded-2xl cursor-default border border-transparent hover:border-white/10">
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 group-hover:bg-blue-500/20 group-hover:scale-110 shadow-[0_0_15px_rgba(59,130,246,0.15)] group-hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md flex items-center justify-center border border-blue-500/20 transition-all duration-300 shrink-0">
+                                    <Settings className="w-5 h-5 text-blue-300 group-hover:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <h4 className="font-semibold text-white mt-1">Instant Operations requests</h4>
-                                    <p className="text-sm text-blue-200/80">Report issues and track maintenance progress automatically.</p>
+                                    <h4 className="font-semibold text-white mt-0.5 text-base group-hover:text-blue-100 transition-colors">Instant Operations requests</h4>
+                                    <p className="text-sm text-blue-200/70 mt-1 leading-relaxed">Report issues, track maintenance progress, and receive automated status updates.</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
 
-                    <div className="mt-10 text-blue-300/60 text-sm">
+                    <div className="mt-auto text-blue-300/60 text-[13px]">
                         © 2026 SLIIT Smart Campus Operations Hub
                     </div>
                 </div>
             </div>
 
             {/* Right section - form */}
-            <div className="w-full md:w-1/2 flex flex-col justify-start md:justify-center items-center py-8 px-4 sm:p-8 relative">
+            <div className="w-full md:w-1/2 h-full overflow-y-auto flex flex-col justify-start md:justify-center items-center py-6 px-4 md:py-0 relative">
 
                 {/* Mobile header view & navigation */}
                 <div className="md:hidden w-full flex items-center justify-between mb-8 px-2 border-b border-gray-100 pb-4">
@@ -98,15 +129,15 @@ export const RegisterPage = () => {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[400px]">
-                    <div className="mb-6 text-center md:text-left">
-                        <h1 className="text-2xl font-bold text-text-main mb-2">Create an account</h1>
-                        <p className="text-text-muted text-md">
-                            Already have an account? <a href="#" className="text-primary font-medium hover:underline">Log in here</a>
+                <div className="w-full max-w-[400px] my-auto">
+                    <div className="mb-4 text-center md:text-left">
+                        <h1 className="text-2xl font-bold text-text-main mb-1.5">Create an account</h1>
+                        <p className="text-text-muted text-[15px]">
+                            Already have an account? <Link to="/login" className="text-primary font-medium hover:underline">Log in here</Link>
                         </p>
                     </div>
 
-                    <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                    <form className="space-y-3.5" onSubmit={(e) => e.preventDefault()}>
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full">
@@ -185,7 +216,7 @@ export const RegisterPage = () => {
                             </label>
                         </div>
 
-                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-4 rounded-lg mt-6 flex justify-center items-center gap-2 transition-colors">
+                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-colors">
                             Create Account
                             <Rocket className="w-4 h-4" />
                         </button>
