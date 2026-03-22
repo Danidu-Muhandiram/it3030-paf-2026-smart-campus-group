@@ -1,4 +1,4 @@
-package com.smartcampus.exception;
+package com.smartcampus.shared.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

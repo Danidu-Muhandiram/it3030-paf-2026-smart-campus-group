@@ -1,4 +1,4 @@
-package com.smartcampus.dto;
+package com.smartcampus.shared.dto;
 
 import java.time.LocalDateTime;
 
