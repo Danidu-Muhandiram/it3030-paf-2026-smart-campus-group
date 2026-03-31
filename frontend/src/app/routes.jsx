@@ -14,6 +14,7 @@ import { AdminReportsPage } from '../features/admin-dashboard/pages/AdminReports
 import { AdminBookingsPage } from '../features/booking/pages/AdminBookingPage'
 import { BookingRequestPage } from '../features/booking/pages/BookingRequestPage'
 import { MyBookingPage } from '../features/booking/pages/MyBookingPage'
+import { FacilitiesCataloguePage } from '../features/facilities/pages/FacilitiesCataloguePage'
 import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from './navigation/dashboardNavItems'
 import { useAuth } from '../features/auth/AuthContext'
 
@@ -148,6 +149,12 @@ export function AppRoutes() {
             <Route path="/dashboard/bookings/request" element={
                 <UserDashboardRoute>
                     <Navigate to="/dashboard/bookings/new" replace />
+                </UserDashboardRoute>
+            } />
+
+            <Route path="/dashboard/facilities" element={
+                <UserDashboardRoute>
+                    <FacilitiesCataloguePage />
                 </UserDashboardRoute>
             } />
 
