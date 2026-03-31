@@ -5,7 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "roles")
@@ -17,6 +20,9 @@ public class Role {
 
     @Column(name = "name", nullable = false, unique = true, length = 50)
     private String name;
+
+    @OneToMany(mappedBy = "role")
+    private Set<User> users = new HashSet<>();
 
     public Role() {
     }
@@ -39,5 +45,13 @@ public class Role {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Set<User> getUsers() {
+        return users;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
     }
 }
