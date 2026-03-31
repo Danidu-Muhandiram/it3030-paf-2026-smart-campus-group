@@ -1,0 +1,15 @@
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255),
+    provider VARCHAR(20) NOT NULL, -- LOCAL / GOOGLE
+    provider_id VARCHAR(100),
+    role_id BIGINT,
+    profile_picture VARCHAR(255),
+    phone VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES roles(id)
+);
