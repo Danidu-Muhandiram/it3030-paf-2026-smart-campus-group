@@ -10,6 +10,7 @@ import {
     Info,
     MapPin,
     Users,
+    Star,
 } from 'lucide-react';
 
 const TYPE_CONFIG = {
@@ -66,7 +67,7 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-export const ResourceCard = ({ resource, onViewDetails, onBook }) => {
+export const ResourceCard = ({ resource, isFavourite = false, onToggleFavourite, onViewDetails, onBook }) => {
     const { name, type, location, capacity, status } = resource;
     const config = TYPE_CONFIG[type] || DEFAULT_CONFIG;
     const Icon = config.icon;
@@ -75,8 +76,21 @@ export const ResourceCard = ({ resource, onViewDetails, onBook }) => {
     return (
         <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
             {/* Resource Icon Banner */}
-            <div className={`${config.bg} flex items-center justify-center h-32`}>
+            <div className={`${config.bg} relative flex items-center justify-center h-32`}>
                 <Icon className={`w-16 h-16 ${config.iconColor} opacity-80`} strokeWidth={1.2} />
+                {/* Favourite button */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleFavourite?.(resource.id); }}
+                    title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-white/70 hover:bg-white transition-colors shadow-sm"
+                >
+                    <Star
+                        className={`w-4 h-4 transition-colors ${
+                            isFavourite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400 hover:text-yellow-400'
+                        }`}
+                        strokeWidth={1.8}
+                    />
+                </button>
             </div>
 
             {/* Card Body */}

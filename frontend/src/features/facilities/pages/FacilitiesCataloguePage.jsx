@@ -1,7 +1,18 @@
-import React, { useMemo, useState } from 'react';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { Search, SlidersHorizontal, X, Star } from 'lucide-react';
 import { ResourceCard } from '../components/ResourceCard';
 import { useNavigate } from 'react-router-dom';
+
+const FAVOURITES_KEY = 'sc_fav_resources';
+
+const loadFavourites = () => {
+    try { return new Set(JSON.parse(localStorage.getItem(FAVOURITES_KEY)) || []); }
+    catch { return new Set(); }
+};
+
+const saveFavourites = (set) => {
+    localStorage.setItem(FAVOURITES_KEY, JSON.stringify([...set]));
+};
 
 // ---------------------------------------------------------------------------
 // Mock data — replace with API call when backend endpoint is ready
@@ -35,6 +46,23 @@ const ALL_LOCATIONS = [...new Set(MOCK_RESOURCES.map((r) => r.location))].sort()
 export const FacilitiesCataloguePage = () => {
     const navigate = useNavigate();
 
+    // Favourites
+    const [favourites, setFavourites] = useState(loadFavourites);
+    const toggleFavourite = useCallback((id) => {
+        setFavourites((prev) => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            saveFavourites(next);
+            return next;
+        });
+    }, []);
+
+    // Tab: 'all' | 'favourites'
+    const [activeTab, setActiveTab] = useState('all');
+
+    // Sort
+    const [sortBy, setSortBy] = useState('default');
+
     // Filter state
     const [search, setSearch] = useState('');
     const [selectedType, setSelectedType] = useState('');
@@ -46,7 +74,8 @@ export const FacilitiesCataloguePage = () => {
     // Derived filtered list
     const filtered = useMemo(() => {
         const q = search.toLowerCase().trim();
-        return MOCK_RESOURCES.filter((r) => {
+        let list = MOCK_RESOURCES.filter((r) => {
+            if (activeTab === 'favourites' && !favourites.has(r.id)) return false;
             if (q && !r.name.toLowerCase().includes(q) && !r.type.toLowerCase().includes(q) && !r.location.toLowerCase().includes(q)) return false;
             if (selectedType && r.type !== selectedType) return false;
             if (selectedLocation && r.location !== selectedLocation) return false;
@@ -60,7 +89,13 @@ export const FacilitiesCataloguePage = () => {
             if (availableOnly && r.status !== 'ACTIVE') return false;
             return true;
         });
-    }, [search, selectedType, selectedLocation, selectedCapacity, availableOnly]);
+        if (sortBy === 'name-asc') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+        if (sortBy === 'name-desc') list = [...list].sort((a, b) => b.name.localeCompare(a.name));
+        if (sortBy === 'capacity-asc') list = [...list].sort((a, b) => (a.capacity ?? 0) - (b.capacity ?? 0));
+        if (sortBy === 'capacity-desc') list = [...list].sort((a, b) => (b.capacity ?? 0) - (a.capacity ?? 0));
+        if (sortBy === 'available-first') list = [...list].sort((a) => (a.status === 'ACTIVE' ? -1 : 1));
+        return list;
+    }, [search, selectedType, selectedLocation, selectedCapacity, availableOnly, sortBy, activeTab, favourites]);
 
     // Pagination
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -88,8 +123,32 @@ export const FacilitiesCataloguePage = () => {
             <div>
                 <h1 className="text-2xl font-bold text-text-main">Campus Facilities &amp; Assets Catalogue</h1>
                 <p className="mt-1 text-sm text-text-muted">
-                    Browse all available rooms, labs, and campus equipment.
+                    Browse all available halls, labs, campus equipments and other resources.
                 </p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center gap-1 border-b border-gray-200">
+                {[
+                    { key: 'all', label: 'All Resources' },
+                    { key: 'favourites', label: `My Favourites`, icon: Star, count: favourites.size },
+                ].map(({ key, label, icon: Icon, count }) => (
+                    <button
+                        key={key}
+                        onClick={() => { setActiveTab(key); setCurrentPage(1); }}
+                        className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                            activeTab === key
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-text-muted hover:text-text-main'
+                        }`}
+                    >
+                        {Icon && <Icon className="w-3.5 h-3.5" />}
+                        {label}
+                        {count != null && count > 0 && (
+                            <span className="ml-1 text-xs bg-yellow-100 text-yellow-700 font-semibold px-1.5 py-0.5 rounded-full">{count}</span>
+                        )}
+                    </button>
+                ))}
             </div>
 
             {/* Filter Bar */}
@@ -168,10 +227,25 @@ export const FacilitiesCataloguePage = () => {
                     </button>
                 )}
 
-                {/* Results count */}
-                <span className="ml-auto text-xs text-text-muted whitespace-nowrap">
-                    {filtered.length} result{filtered.length !== 1 ? 's' : ''}
-                </span>
+                {/* Results count + Sort */}
+                <div className="ml-auto flex items-center gap-2">
+                    <span className="text-xs text-text-muted whitespace-nowrap">
+                        {filtered.length} result{filtered.length !== 1 ? 's' : ''}
+                    </span>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+                        className="text-xs border border-gray-200 rounded-lg pl-2 pr-7 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-main bg-white appearance-none"
+                        style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.4rem center' }}
+                    >
+                        <option value="default">Sort: Default</option>
+                        <option value="name-asc">Name A → Z</option>
+                        <option value="name-desc">Name Z → A</option>
+                        <option value="capacity-asc">Capacity: Low → High</option>
+                        <option value="capacity-desc">Capacity: High → Low</option>
+                        <option value="available-first">Available First</option>
+                    </select>
+                </div>
             </div>
 
             {/* Resource Grid */}
@@ -181,6 +255,8 @@ export const FacilitiesCataloguePage = () => {
                         <ResourceCard
                             key={resource.id}
                             resource={resource}
+                            isFavourite={favourites.has(resource.id)}
+                            onToggleFavourite={toggleFavourite}
                             onViewDetails={(r) => navigate(`/facilities/${r.id}`)}
                             onBook={(r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`)}
                         />
@@ -188,11 +264,23 @@ export const FacilitiesCataloguePage = () => {
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center py-24 text-text-muted gap-3">
-                    <SlidersHorizontal className="w-10 h-10 opacity-30" />
-                    <p className="text-sm font-medium">No resources match your filters.</p>
-                    <button onClick={resetFilters} className="text-xs underline hover:text-primary transition-colors">
-                        Clear all filters
-                    </button>
+                    {activeTab === 'favourites' ? (
+                        <>
+                            <Star className="w-10 h-10 opacity-20" />
+                            <p className="text-sm font-medium">No favourites yet.</p>
+                            <button onClick={() => setActiveTab('all')} className="text-xs underline hover:text-primary transition-colors">
+                                Browse all resources
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <SlidersHorizontal className="w-10 h-10 opacity-30" />
+                            <p className="text-sm font-medium">No resources match your filters.</p>
+                            <button onClick={resetFilters} className="text-xs underline hover:text-primary transition-colors">
+                                Clear all filters
+                            </button>
+                        </>
+                    )}
                 </div>
             )}
 
