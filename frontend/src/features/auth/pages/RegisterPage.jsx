@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
 
 export const RegisterPage = () => {
@@ -216,9 +217,27 @@ export const RegisterPage = () => {
                             </label>
                         </div>
 
-                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-colors">
+                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
                             Create Account
                             <Rocket className="w-4 h-4" />
+                        </button>
+
+                        <div className="relative mt-6 mb-1">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm font-medium">
+                                <span className="bg-white px-4 text-text-muted">Or sign up with</span>
+                            </div>
+                        </div>
+
+                        <button 
+                            type="button"
+                            aria-label="Sign in with Google"
+                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
+                        >
+                            <FcGoogle className="w-5 h-5" />
+                            Google
                         </button>
                     </form>
                 </div>

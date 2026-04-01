@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LogIn, ArrowLeft, Building2, Eye, EyeOff } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 
 export const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -125,9 +126,27 @@ export const LoginPage = () => {
                             </label>
                         </div>
 
-                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-4 rounded-lg mt-8 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
+                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-8 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
                             Log In
                             <LogIn className="w-4 h-4" />
+                        </button>
+
+                        <div className="relative mt-7 mb-2">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm font-medium">
+                                <span className="bg-white px-4 text-text-muted">Or continue with</span>
+                            </div>
+                        </div>
+
+                        <button 
+                            type="button"
+                            aria-label="Sign in with Google"
+                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
+                        >
+                            <FcGoogle className="w-5 h-5" />
+                            Google
                         </button>
                     </form>
                 </div>
