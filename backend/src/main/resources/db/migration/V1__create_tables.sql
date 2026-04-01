@@ -1,6 +1,4 @@
--- =========================
 -- ROLES & USERS
--- =========================
 CREATE TABLE roles (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(50) NOT NULL UNIQUE
@@ -12,13 +10,11 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255),
 
-    -- Using VARCHAR instead of ENUM for flexibility
     provider VARCHAR(50) NOT NULL,
     provider_id VARCHAR(100),
 
     role_id BIGINT NOT NULL,
 
-    -- Using VARCHAR instead of ENUM for flexibility
     status VARCHAR(50) DEFAULT 'ACTIVE',
 
     profile_picture VARCHAR(255),
@@ -30,9 +26,8 @@ CREATE TABLE users (
     CONSTRAINT fk_user_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE RESTRICT
 );
 
--- =========================
+
 -- LOCATIONS
--- =========================
 CREATE TABLE locations (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
@@ -40,14 +35,11 @@ CREATE TABLE locations (
     floor_no INT
 );
 
--- =========================
 -- ASSETS
--- =========================
 CREATE TABLE assets (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     
-    -- Using VARCHAR instead of ENUM for flexibility
     type VARCHAR(50) NOT NULL,
     status VARCHAR(50) DEFAULT 'ACTIVE',
     
@@ -57,9 +49,8 @@ CREATE TABLE assets (
     CONSTRAINT fk_asset_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE SET NULL
 );
 
--- =========================
+
 -- BOOKINGS
--- =========================
 CREATE TABLE bookings (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     asset_id BIGINT NOT NULL,
@@ -72,7 +63,6 @@ CREATE TABLE bookings (
     purpose TEXT,
     headcount INT,
 
-    -- Using VARCHAR instead of ENUM for flexibility
     status VARCHAR(50) DEFAULT 'PENDING',
 
     reviewed_by BIGINT,
@@ -88,27 +78,23 @@ CREATE TABLE bookings (
     CONSTRAINT chk_booking_time CHECK (start_time < end_time)
 );
 
--- Indexes for frequently queried fields
 CREATE INDEX idx_bookings_asset_id ON bookings(asset_id);
 CREATE INDEX idx_bookings_requested_by ON bookings(requested_by);
 CREATE INDEX idx_bookings_status ON bookings(status);
 
--- =========================
+
 -- TICKETS
--- =========================
 CREATE TABLE tickets (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     reported_by BIGINT NOT NULL,
     asset_id BIGINT NOT NULL,
 
-    -- Using VARCHAR instead of ENUM for flexibility
     priority VARCHAR(50) DEFAULT 'MEDIUM',
 
     title VARCHAR(200) NOT NULL,
     description TEXT,
     contact VARCHAR(100),
 
-    -- Using VARCHAR instead of ENUM for flexibility
     status VARCHAR(50) DEFAULT 'OPEN',
 
     assigned_to BIGINT,
@@ -126,14 +112,11 @@ CREATE TABLE tickets (
     CONSTRAINT fk_ticket_assigned FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Indexes for frequently queried fields
 CREATE INDEX idx_tickets_status ON tickets(status);
 CREATE INDEX idx_tickets_assigned_to ON tickets(assigned_to);
 CREATE INDEX idx_tickets_asset_id ON tickets(asset_id);
 
--- =========================
 -- TICKET ATTACHMENTS
--- =========================
 CREATE TABLE ticket_attachments (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     ticket_id BIGINT NOT NULL,
@@ -153,9 +136,7 @@ CREATE TABLE ticket_attachments (
         FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
--- =========================
 -- TICKET COMMENTS
--- =========================
 CREATE TABLE ticket_comments (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     ticket_id BIGINT NOT NULL,
@@ -173,9 +154,7 @@ CREATE TABLE ticket_comments (
         FOREIGN KEY (commented_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- =========================
 -- NOTIFICATIONS
--- =========================
 CREATE TABLE notifications (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT NOT NULL,
@@ -197,9 +176,7 @@ CREATE TABLE notifications (
 
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 
--- =========================
 -- AUDIT LOGS
--- =========================
 CREATE TABLE audits (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     user_id BIGINT,
@@ -208,11 +185,9 @@ CREATE TABLE audits (
     entity_type VARCHAR(50),
     entity_id BIGINT,
 
-    -- Using JSON for unstructured data logging
     old_value JSON,
     new_value JSON,
     
-    -- Added ip_address for better traceability
     ip_address VARCHAR(45),
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
