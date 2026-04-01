@@ -17,9 +17,6 @@ spring:
     enabled: true
     baseline-on-migrate: true
     clean-disabled: false
-    url: ${DB_URL}
-    user: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
 
 server:
   port: 8080
