@@ -39,6 +39,7 @@ export const FacilitiesCataloguePage = () => {
     const [search, setSearch] = useState('');
     const [selectedType, setSelectedType] = useState('');
     const [selectedLocation, setSelectedLocation] = useState('');
+    const [selectedCapacity, setSelectedCapacity] = useState('');
     const [availableOnly, setAvailableOnly] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
 
@@ -49,10 +50,17 @@ export const FacilitiesCataloguePage = () => {
             if (q && !r.name.toLowerCase().includes(q) && !r.type.toLowerCase().includes(q) && !r.location.toLowerCase().includes(q)) return false;
             if (selectedType && r.type !== selectedType) return false;
             if (selectedLocation && r.location !== selectedLocation) return false;
+            if (selectedCapacity) {
+                const cap = r.capacity ?? 0;
+                if (selectedCapacity === '1-20' && !(cap >= 1 && cap <= 20)) return false;
+                if (selectedCapacity === '21-50' && !(cap >= 21 && cap <= 50)) return false;
+                if (selectedCapacity === '51-100' && !(cap >= 51 && cap <= 100)) return false;
+                if (selectedCapacity === '100+' && !(cap > 100)) return false;
+            }
             if (availableOnly && r.status !== 'ACTIVE') return false;
             return true;
         });
-    }, [search, selectedType, selectedLocation, availableOnly]);
+    }, [search, selectedType, selectedLocation, selectedCapacity, availableOnly]);
 
     // Pagination
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -62,11 +70,12 @@ export const FacilitiesCataloguePage = () => {
         setSearch('');
         setSelectedType('');
         setSelectedLocation('');
+        setSelectedCapacity('');
         setAvailableOnly(false);
         setCurrentPage(1);
     };
 
-    const hasActiveFilters = search || selectedType || selectedLocation || availableOnly;
+    const hasActiveFilters = search || selectedType || selectedLocation || selectedCapacity || availableOnly;
 
     const handleFilterChange = (setter) => (e) => {
         setter(e.target.value);
@@ -101,7 +110,8 @@ export const FacilitiesCataloguePage = () => {
                 <select
                     value={selectedType}
                     onChange={handleFilterChange(setSelectedType)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-main bg-white"
+                    className="text-sm border border-gray-200 rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-main bg-white appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
                 >
                     <option value="">All Types</option>
                     {ALL_TYPES.map((t) => (
@@ -113,12 +123,27 @@ export const FacilitiesCataloguePage = () => {
                 <select
                     value={selectedLocation}
                     onChange={handleFilterChange(setSelectedLocation)}
-                    className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-main bg-white"
+                    className="text-sm border border-gray-200 rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-main bg-white appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
                 >
                     <option value="">All Locations</option>
                     {ALL_LOCATIONS.map((l) => (
                         <option key={l} value={l}>{l}</option>
                     ))}
+                </select>
+
+                {/* Capacity Filter */}
+                <select
+                    value={selectedCapacity}
+                    onChange={handleFilterChange(setSelectedCapacity)}
+                    className="text-sm border border-gray-200 rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-text-main bg-white appearance-none"
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.5rem center' }}
+                >
+                    <option value="">All Capacities</option>
+                    <option value="1-20">1 – 20</option>
+                    <option value="21-50">21 – 50</option>
+                    <option value="51-100">51 – 100</option>
+                    <option value="100+">100+</option>
                 </select>
 
                 {/* Available Only */}
