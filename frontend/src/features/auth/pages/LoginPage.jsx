@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LogIn, ArrowLeft, Building2, Eye, EyeOff } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
+import { authService } from '../authService';
 
 export const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -143,6 +144,7 @@ export const LoginPage = () => {
                         <button 
                             type="button"
                             aria-label="Sign in with Google"
+                            onClick={authService.startGoogleLogin}
                             className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
                         >
                             <FcGoogle className="w-5 h-5" />

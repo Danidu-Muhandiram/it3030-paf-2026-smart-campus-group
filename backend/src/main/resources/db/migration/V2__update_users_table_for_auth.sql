@@ -6,7 +6,7 @@ ALTER TABLE users ADD COLUMN last_name VARCHAR(50);
 ALTER TABLE users ADD COLUMN university_id VARCHAR(50) UNIQUE;
 
 -- 2. Migrate existing data conceptually
--- If there's no space, last_name is empty string.
+-- We use a simple space split for name. If there's no space, last_name is empty string.
 UPDATE users SET 
     first_name = SUBSTRING_INDEX(name, ' ', 1),
     last_name = IF(LOCATE(' ', name) > 0, SUBSTRING(name, LOCATE(' ', name) + 1), '');
