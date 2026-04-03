@@ -1,7 +1,7 @@
-import React, { useMemo, useState, useCallback } from 'react';
-import { Search, SlidersHorizontal, X, Star } from 'lucide-react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import { Search, SlidersHorizontal, X, Star, LayoutGrid, List } from 'lucide-react';
 import { ResourceCard } from '../components/ResourceCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const FAVOURITES_KEY = 'sc_fav_resources';
 
@@ -45,6 +45,7 @@ const ALL_LOCATIONS = [...new Set(MOCK_RESOURCES.map((r) => r.location))].sort()
 // ---------------------------------------------------------------------------
 export const FacilitiesCataloguePage = () => {
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Favourites
     const [favourites, setFavourites] = useState(loadFavourites);
@@ -60,16 +61,32 @@ export const FacilitiesCataloguePage = () => {
     // Tab: 'all' | 'favourites'
     const [activeTab, setActiveTab] = useState('all');
 
-    // Sort
-    const [sortBy, setSortBy] = useState('default');
+    // View mode: 'grid' | 'list'
+    const [viewMode, setViewMode] = useState('grid');
 
-    // Filter state
-    const [search, setSearch] = useState('');
-    const [selectedType, setSelectedType] = useState('');
-    const [selectedLocation, setSelectedLocation] = useState('');
-    const [selectedCapacity, setSelectedCapacity] = useState('');
-    const [availableOnly, setAvailableOnly] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
+    // Sort
+    const [sortBy, setSortBy] = useState(() => searchParams.get('sort') || 'default');
+
+    // Filter state — initialised from URL
+    const [search, setSearch] = useState(() => searchParams.get('q') || '');
+    const [selectedType, setSelectedType] = useState(() => searchParams.get('type') || '');
+    const [selectedLocation, setSelectedLocation] = useState(() => searchParams.get('location') || '');
+    const [selectedCapacity, setSelectedCapacity] = useState(() => searchParams.get('capacity') || '');
+    const [availableOnly, setAvailableOnly] = useState(() => searchParams.get('available') === 'true');
+    const [currentPage, setCurrentPage] = useState(() => parseInt(searchParams.get('page') || '1', 10));
+
+    // Sync state → URL whenever filters change
+    useEffect(() => {
+        const params = {};
+        if (search) params.q = search;
+        if (selectedType) params.type = selectedType;
+        if (selectedLocation) params.location = selectedLocation;
+        if (selectedCapacity) params.capacity = selectedCapacity;
+        if (availableOnly) params.available = 'true';
+        if (sortBy !== 'default') params.sort = sortBy;
+        if (currentPage > 1) params.page = String(currentPage);
+        setSearchParams(params, { replace: true });
+    }, [search, selectedType, selectedLocation, selectedCapacity, availableOnly, sortBy, currentPage, setSearchParams]);
 
     // Derived filtered list
     const filtered = useMemo(() => {
@@ -227,7 +244,7 @@ export const FacilitiesCataloguePage = () => {
                     </button>
                 )}
 
-                {/* Results count + Sort */}
+                {/* Results count + Sort + View Toggle */}
                 <div className="ml-auto flex items-center gap-2">
                     <span className="text-xs text-text-muted whitespace-nowrap">
                         {filtered.length} result{filtered.length !== 1 ? 's' : ''}
@@ -245,23 +262,60 @@ export const FacilitiesCataloguePage = () => {
                         <option value="capacity-desc">Capacity: High → Low</option>
                         <option value="available-first">Available First</option>
                     </select>
+                    {/* View mode toggle */}
+                    <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            title="Grid view"
+                            className={`p-1.5 transition-colors ${
+                                viewMode === 'grid' ? 'bg-primary text-white' : 'text-text-muted hover:text-primary bg-white'
+                            }`}
+                        >
+                            <LayoutGrid className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('list')}
+                            title="List view"
+                            className={`p-1.5 transition-colors ${
+                                viewMode === 'list' ? 'bg-primary text-white' : 'text-text-muted hover:text-primary bg-white'
+                            }`}
+                        >
+                            <List className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Resource Grid */}
+            {/* Resource Grid / List */}
             {paginated.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {paginated.map((resource) => (
-                        <ResourceCard
-                            key={resource.id}
-                            resource={resource}
-                            isFavourite={favourites.has(resource.id)}
-                            onToggleFavourite={toggleFavourite}
-                            onViewDetails={(r) => navigate(`/facilities/${r.id}`)}
-                            onBook={(r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`)}
-                        />
-                    ))}
-                </div>
+                viewMode === 'grid' ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {paginated.map((resource) => (
+                            <ResourceCard
+                                key={resource.id}
+                                resource={resource}
+                                isFavourite={favourites.has(resource.id)}
+                                onToggleFavourite={toggleFavourite}
+                                onViewDetails={(r) => navigate(`/facilities/${r.id}`)}
+                                onBook={(r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`)}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="flex flex-col gap-2">
+                        {paginated.map((resource) => (
+                            <ResourceCard
+                                key={resource.id}
+                                resource={resource}
+                                isFavourite={favourites.has(resource.id)}
+                                onToggleFavourite={toggleFavourite}
+                                onViewDetails={(r) => navigate(`/facilities/${r.id}`)}
+                                onBook={(r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`)}
+                                listView
+                            />
+                        ))}
+                    </div>
+                )
             ) : (
                 <div className="flex flex-col items-center justify-center py-24 text-text-muted gap-3">
                     {activeTab === 'favourites' ? (

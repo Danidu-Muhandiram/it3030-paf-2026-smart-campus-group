@@ -67,11 +67,66 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-export const ResourceCard = ({ resource, isFavourite = false, onToggleFavourite, onViewDetails, onBook }) => {
+export const ResourceCard = ({ resource, isFavourite = false, onToggleFavourite, onViewDetails, onBook, listView = false }) => {
     const { name, type, location, capacity, status } = resource;
     const config = TYPE_CONFIG[type] || DEFAULT_CONFIG;
     const Icon = config.icon;
     const isAvailable = status === 'ACTIVE';
+
+    if (listView) {
+        return (
+            <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 px-4 py-3 overflow-hidden">
+                {/* Icon */}
+                <div className={`${config.bg} shrink-0 w-10 h-10 rounded-lg flex items-center justify-center`}>
+                    <Icon className={`w-5 h-5 ${config.iconColor}`} strokeWidth={1.5} />
+                </div>
+
+                {/* Name + meta */}
+                <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-main truncate">{name}</p>
+                    <p className="text-xs text-text-muted truncate">
+                        {type} &middot; {location} &middot; Capacity: {capacity}
+                    </p>
+                </div>
+
+                {/* Status badge */}
+                <StatusBadge status={status} />
+
+                {/* Favourite */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleFavourite?.(resource.id); }}
+                    title={isFavourite ? 'Remove from favourites' : 'Add to favourites'}
+                    className="shrink-0 p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                >
+                    <Star
+                        className={`w-4 h-4 transition-colors ${isFavourite ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
+                        strokeWidth={1.8}
+                    />
+                </button>
+
+                {/* Action */}
+                <div className="shrink-0">
+                    {isAvailable ? (
+                        <button
+                            onClick={() => onBook?.(resource)}
+                            className="flex items-center gap-1.5 text-xs font-semibold bg-primary hover:bg-primary-hover text-white px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            <CalendarCheck className="w-3.5 h-3.5" />
+                            Book Now
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => onViewDetails?.(resource)}
+                            className="flex items-center gap-1.5 text-xs font-semibold border border-gray-300 hover:border-primary hover:text-primary text-text-muted px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                            <Info className="w-3.5 h-3.5" />
+                            Details
+                        </button>
+                    )}
+                </div>
+            </article>
+        );
+    }
 
     return (
         <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
