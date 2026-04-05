@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
+import { authService } from '../authService';
 
 export const RegisterPage = () => {
     const containerVariants = {
@@ -234,6 +235,7 @@ export const RegisterPage = () => {
                         <button 
                             type="button"
                             aria-label="Sign in with Google"
+                            onClick={authService.startGoogleLogin}
                             className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
                         >
                             <FcGoogle className="w-5 h-5" />
