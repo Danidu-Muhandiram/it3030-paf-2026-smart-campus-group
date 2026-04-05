@@ -1,18 +1,24 @@
 import axiosInstance from '../../services/axios'
 
-// Example structure for Auth Services
 export const authService = {
-    login: async (credentials) => {
-        // const response = await axiosInstance.post('/auth/login', credentials)
-        // return response.data
+    startGoogleLogin: () => {
+        window.location.href = 'http://localhost:8080/oauth2/authorization/google'
     },
 
-    register: async (userData) => {
-        // const response = await axiosInstance.post('/auth/register', userData)
-        // return response.data
+    setToken: (token) => {
+        localStorage.setItem('auth_token', token)
+    },
+
+    getToken: () => {
+        return localStorage.getItem('auth_token')
+    },
+
+    fetchCurrentUser: async () => {
+        const response = await axiosInstance.get('/auth/me')
+        return response.data
     },
 
     logout: () => {
-        // localStorage.removeItem('token')
+        localStorage.removeItem('auth_token')
     }
 }
