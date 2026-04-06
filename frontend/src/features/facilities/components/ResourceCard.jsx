@@ -44,19 +44,24 @@ const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onBo
     const isAvailable = status === 'ACTIVE';
 
     return (
-        <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center gap-4 px-4 py-3">
-            <div className={`${bg} shrink-0 w-10 h-10 rounded-lg flex items-center justify-center`}>
-                <Icon className={`w-5 h-5 ${iconColor}`} strokeWidth={1.5} />
+        <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3 px-3 sm:px-4 py-3">
+            <div className={`${bg} shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center`}>
+                <Icon className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${iconColor}`} strokeWidth={1.5} />
             </div>
 
             <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-text-main truncate">{name}</p>
-                <p className="text-xs text-text-muted">
+                <p className="text-xs text-text-muted hidden sm:block">
                     {type} &middot; {location} &middot; Capacity: {capacity}
+                </p>
+                <p className="text-xs text-text-muted sm:hidden">
+                    {location} &middot; Cap: {capacity}
                 </p>
             </div>
 
-            <StatusBadge status={status} />
+            <div className="hidden sm:block shrink-0">
+                <StatusBadge status={status} />
+            </div>
 
             <FavouriteButton
                 isFavourite={isFavourite}
@@ -67,16 +72,19 @@ const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onBo
             {isAvailable ? (
                 <button
                     onClick={() => onBook?.(resource)}
-                    className="shrink-0 flex items-center gap-1.5 text-xs font-semibold bg-primary hover:bg-primary-hover text-white px-3 py-1.5 rounded-lg transition-colors"
+                    className="shrink-0 flex items-center gap-1 sm:gap-1.5 text-xs font-semibold bg-primary hover:bg-primary-hover text-white px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
                 >
-                    <CalendarCheck className="w-3.5 h-3.5" /> Book Now
+                    <CalendarCheck className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">Book Now</span>
+                    <span className="xs:hidden">Book</span>
                 </button>
             ) : (
                 <button
                     onClick={() => onViewDetails?.(resource)}
-                    className="shrink-0 flex items-center gap-1.5 text-xs font-semibold border border-gray-300 hover:border-primary hover:text-primary text-text-muted px-3 py-1.5 rounded-lg transition-colors"
+                    className="shrink-0 flex items-center gap-1 sm:gap-1.5 text-xs font-semibold border border-gray-300 hover:border-primary hover:text-primary text-text-muted px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
                 >
-                    <Info className="w-3.5 h-3.5" /> Details
+                    <Info className="w-3.5 h-3.5" />
+                    <span className="hidden xs:inline">Details</span>
                 </button>
             )}
         </article>

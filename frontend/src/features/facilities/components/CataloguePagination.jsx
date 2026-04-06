@@ -12,11 +12,11 @@ export const CataloguePagination = ({ currentPage, totalPages, onPageChange }) =
     const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
     return (
-        <div className="flex items-center justify-center gap-1 pt-2">
+        <div className="flex items-center justify-center gap-1 pt-2 flex-wrap">
             <button
                 disabled={currentPage === 1}
                 onClick={() => onPageChange(currentPage - 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-gray-200 text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
                 ‹ Prev
             </button>
@@ -39,7 +39,7 @@ export const CataloguePagination = ({ currentPage, totalPages, onPageChange }) =
                     <button
                         key={page}
                         onClick={() => onPageChange(page)}
-                        className={`w-8 h-8 text-sm rounded-lg border transition-colors ${
+                        className={`w-7 h-7 sm:w-8 sm:h-8 text-xs sm:text-sm rounded-lg border transition-colors ${
                             currentPage === page
                                 ? 'bg-primary text-white border-primary font-semibold'
                                 : 'border-gray-200 text-text-muted hover:border-primary hover:text-primary'
@@ -53,7 +53,7 @@ export const CataloguePagination = ({ currentPage, totalPages, onPageChange }) =
             <button
                 disabled={currentPage === totalPages}
                 onClick={() => onPageChange(currentPage + 1)}
-                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm rounded-lg border border-gray-200 text-text-muted hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
                 Next ›
             </button>

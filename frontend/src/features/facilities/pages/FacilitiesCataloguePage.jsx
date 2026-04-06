@@ -66,17 +66,19 @@ export const FacilitiesCataloguePage = () => {
     const navigateToDetails = (r) => navigate(`/dashboard/facilities/${r.id}`);
 
     return (
-        <div className="space-y-6 pb-10">
+        <div className="space-y-4 sm:space-y-6 pb-10 px-0">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-text-main">Campus Facilities &amp; Assets Catalogue</h1>
-                <p className="mt-1 text-sm text-text-muted">
+                <h1 className="text-xl sm:text-2xl font-bold text-text-main leading-tight">
+                    Campus Facilities &amp; Assets Catalogue
+                </h1>
+                <p className="mt-1 text-xs sm:text-sm text-text-muted">
                     Browse all available halls, labs, and campus equipment.
                 </p>
             </div>
 
-            {/* Tabs */}
-            <div className="flex items-center gap-1 border-b border-gray-200">
+            {/* Tabs — horizontally scrollable on mobile */}
+            <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto scrollbar-none -mx-1 px-1">
                 {TABS.map(({ key, label, icon: Icon }) => (
                     <button
                         key={key}
@@ -125,7 +127,7 @@ export const FacilitiesCataloguePage = () => {
             {paginated.length > 0 ? (
                 <div className={
                     viewMode === 'grid'
-                        ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'
+                        ? 'grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4'
                         : 'flex flex-col gap-2'
                 }>
                     {paginated.map((resource) => (
