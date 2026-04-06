@@ -19,7 +19,10 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Component
+@Transactional
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
@@ -110,7 +113,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String token = jwtService.generateToken(savedUser);
 
         String redirectUrl = UriComponentsBuilder
-                .fromUriString(frontendUrl + "/auth/success")
+                .fromUriString(frontendUrl + "/dashboard")
                 .queryParam("token", token)
                 .build()
                 .toUriString();
