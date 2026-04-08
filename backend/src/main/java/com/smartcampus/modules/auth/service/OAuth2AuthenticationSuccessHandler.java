@@ -19,7 +19,12 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.HttpHeaders;
+
 @Component
+@Transactional
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
@@ -109,9 +114,18 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         User savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser);
 
+        ResponseCookie cookie = ResponseCookie.from("auth_token", token)
+                .httpOnly(true)
+                .secure(false) // will set to true in production
+                .path("/")
+                .maxAge(24 * 60 * 60)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
         String redirectUrl = UriComponentsBuilder
-                .fromUriString(frontendUrl + "/auth/success")
-                .queryParam("token", token)
+                .fromUriString(frontendUrl + "/dashboard")
                 .build()
                 .toUriString();
 
