@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarCheck, Info, MapPin, Users, Star } from 'lucide-react';
+import { ExternalLink, MapPin, Users, Star } from 'lucide-react';
 import { getTypeConfig } from '../constants/resourceTypeConfig';
 
 // ---------------------------------------------------------------------------
@@ -38,19 +38,21 @@ const FavouriteButton = ({ isFavourite, onToggle, className = '' }) => (
 // ---------------------------------------------------------------------------
 // List row variant
 // ---------------------------------------------------------------------------
-const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onBook }) => {
+const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails }) => {
     const { name, type, location, capacity, status } = resource;
     const { bg, iconColor, icon: Icon } = getTypeConfig(type);
-    const isAvailable = status === 'ACTIVE';
 
     return (
-        <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex items-center gap-3 px-3 sm:px-4 py-3">
+        <article
+            onClick={() => onViewDetails?.(resource)}
+            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/30 transition-all flex items-center gap-3 px-3 sm:px-4 py-3 cursor-pointer group"
+        >
             <div className={`${bg} shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center`}>
-                <Icon className={`w-4.5 h-4.5 sm:w-5 sm:h-5 ${iconColor}`} strokeWidth={1.5} />
+                <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${iconColor}`} strokeWidth={1.5} />
             </div>
 
             <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-text-main truncate">{name}</p>
+                <p className="text-sm font-semibold text-text-main truncate group-hover:text-primary transition-colors">{name}</p>
                 <p className="text-xs text-text-muted hidden sm:block">
                     {type} &middot; {location} &middot; Capacity: {capacity}
                 </p>
@@ -69,24 +71,13 @@ const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onBo
                 className="shrink-0 hover:bg-gray-100"
             />
 
-            {isAvailable ? (
-                <button
-                    onClick={() => onBook?.(resource)}
-                    className="shrink-0 flex items-center gap-1 sm:gap-1.5 text-xs font-semibold bg-primary hover:bg-primary-hover text-white px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
-                >
-                    <CalendarCheck className="w-3.5 h-3.5" />
-                    <span className="hidden xs:inline">Book Now</span>
-                    <span className="xs:hidden">Book</span>
-                </button>
-            ) : (
-                <button
-                    onClick={() => onViewDetails?.(resource)}
-                    className="shrink-0 flex items-center gap-1 sm:gap-1.5 text-xs font-semibold border border-gray-300 hover:border-primary hover:text-primary text-text-muted px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors"
-                >
-                    <Info className="w-3.5 h-3.5" />
-                    <span className="hidden xs:inline">Details</span>
-                </button>
-            )}
+            <button
+                onClick={(e) => { e.stopPropagation(); onViewDetails?.(resource); }}
+                className="shrink-0 flex items-center gap-1 sm:gap-1.5 text-xs font-semibold border border-gray-200 hover:border-primary hover:text-primary text-text-muted px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors bg-white"
+            >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">View Details</span>
+            </button>
         </article>
     );
 };
@@ -94,13 +85,16 @@ const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onBo
 // ---------------------------------------------------------------------------
 // Grid card variant
 // ---------------------------------------------------------------------------
-const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onBook }) => {
+const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails }) => {
     const { name, type, location, capacity, status } = resource;
     const { bg, iconColor, icon: Icon } = getTypeConfig(type);
-    const isAvailable = status === 'ACTIVE';
+    const isActive = status === 'ACTIVE';
 
     return (
-        <article className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden">
+        <article
+            onClick={() => onViewDetails?.(resource)}
+            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/30 transition-all flex flex-col overflow-hidden cursor-pointer group"
+        >
             {/* Banner */}
             <div className={`${bg} relative flex items-center justify-center h-32`}>
                 <Icon className={`w-16 h-16 ${iconColor} opacity-80`} strokeWidth={1.2} />
@@ -109,11 +103,13 @@ const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onB
                     onToggle={() => onToggleFavourite?.(resource.id)}
                     className="absolute top-2 right-2 bg-white/70 hover:bg-white shadow-sm"
                 />
+                {/* Status dot */}
+                <span className={`absolute bottom-2 left-2 w-2 h-2 rounded-full border-2 border-white ${isActive ? 'bg-green-500' : 'bg-red-400'}`} />
             </div>
 
             {/* Body */}
             <div className="p-4 flex flex-col flex-1 gap-3">
-                <h3 className="text-sm font-bold text-text-main leading-tight">{name}</h3>
+                <h3 className="text-sm font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{name}</h3>
 
                 <ul className="space-y-1 text-xs text-text-muted">
                     <li><span className="font-medium text-text-main">Type: </span>{type}</li>
@@ -128,21 +124,12 @@ const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onB
                 <StatusBadge status={status} />
 
                 <div className="mt-auto pt-1">
-                    {isAvailable ? (
-                        <button
-                            onClick={() => onBook?.(resource)}
-                            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold bg-primary hover:bg-primary-hover text-white py-1.5 rounded-lg transition-colors"
-                        >
-                            <CalendarCheck className="w-3.5 h-3.5" /> Book Now
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => onViewDetails?.(resource)}
-                            className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold border border-gray-300 hover:border-primary hover:text-primary text-text-muted py-1.5 rounded-lg transition-colors"
-                        >
-                            <Info className="w-3.5 h-3.5" /> View Details
-                        </button>
-                    )}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onViewDetails?.(resource); }}
+                        className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold border border-gray-200 hover:border-primary hover:text-primary text-text-muted py-1.5 rounded-lg transition-colors bg-white"
+                    >
+                        <ExternalLink className="w-3.5 h-3.5" /> View Details
+                    </button>
                 </div>
             </div>
         </article>
@@ -152,8 +139,8 @@ const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails, onB
 // ---------------------------------------------------------------------------
 // Public component — delegates to grid or list variant
 // ---------------------------------------------------------------------------
-export const ResourceCard = ({ resource, isFavourite = false, onToggleFavourite, onViewDetails, onBook, listView = false }) => {
-    const props = { resource, isFavourite, onToggleFavourite, onViewDetails, onBook };
+export const ResourceCard = ({ resource, isFavourite = false, onToggleFavourite, onViewDetails, listView = false }) => {
+    const props = { resource, isFavourite, onToggleFavourite, onViewDetails };
     return listView ? <ListRow {...props} /> : <GridCard {...props} />;
 };
 

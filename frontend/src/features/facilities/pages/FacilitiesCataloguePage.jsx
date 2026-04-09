@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ResourceCard }          from '../components/ResourceCard';
 import { FilterBar }             from '../components/FilterBar';
 import { CataloguePagination }   from '../components/CataloguePagination';
+import { ResourceDetailDrawer }  from '../components/ResourceDetailDrawer';
 import { useFavourites }         from '../hooks/useFavourites';
 import { useResourceFilters }    from '../hooks/useResourceFilters';
 
@@ -46,8 +47,9 @@ const TABS = [
 export const FacilitiesCataloguePage = () => {
     const navigate = useNavigate();
 
-    const [activeTab, setActiveTab] = useState('all');
-    const [viewMode,  setViewMode]  = useState('grid');
+    const [activeTab,       setActiveTab]       = useState('all');
+    const [viewMode,        setViewMode]        = useState('grid');
+    const [selectedResource, setSelectedResource] = useState(null);
 
     const { favourites, toggleFavourite } = useFavourites();
 
@@ -63,7 +65,8 @@ export const FacilitiesCataloguePage = () => {
     } = filters;
 
     const navigateToBook    = (r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`);
-    const navigateToDetails = (r) => navigate(`/dashboard/facilities/${r.id}`);
+    const openDetails       = (r) => setSelectedResource(r);
+    const closeDetails      = ()  => setSelectedResource(null);
 
     return (
         <div className="space-y-4 sm:space-y-6 pb-10 px-0">
@@ -78,7 +81,7 @@ export const FacilitiesCataloguePage = () => {
             </div>
 
             {/* Tabs — horizontally scrollable on mobile */}
-            <div className="flex items-center gap-1 border-b border-gray-200 overflow-x-auto scrollbar-none -mx-1 px-1">
+            <div className="flex items-center gap-1 border-b border-gray-200 -mx-1 px-1">
                 {TABS.map(({ key, label, icon: Icon }) => (
                     <button
                         key={key}
@@ -137,8 +140,7 @@ export const FacilitiesCataloguePage = () => {
                             listView={viewMode === 'list'}
                             isFavourite={favourites.has(resource.id)}
                             onToggleFavourite={toggleFavourite}
-                            onBook={navigateToBook}
-                            onViewDetails={navigateToDetails}
+                            onViewDetails={openDetails}
                         />
                     ))}
                 </div>
@@ -151,6 +153,15 @@ export const FacilitiesCataloguePage = () => {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
+            />
+
+            {/* Resource detail drawer */}
+            <ResourceDetailDrawer
+                resource={selectedResource}
+                isFavourite={selectedResource ? favourites.has(selectedResource.id) : false}
+                onToggleFavourite={toggleFavourite}
+                onBook={(r) => { closeDetails(); navigateToBook(r); }}
+                onClose={closeDetails}
             />
         </div>
     );
