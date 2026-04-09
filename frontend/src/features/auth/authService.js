@@ -2,23 +2,18 @@ import axiosInstance from '../../services/axios'
 
 export const authService = {
     startGoogleLogin: () => {
+        // OAuth start with full page navigation (not axios/fetch).
         window.location.href = 'http://localhost:8080/oauth2/authorization/google'
     },
 
-    setToken: (token) => {
-        localStorage.setItem('auth_token', token)
-    },
-
-    getToken: () => {
-        return localStorage.getItem('auth_token')
-    },
-
     fetchCurrentUser: async () => {
+        // Cookie is sent automatically via axios withCredentials.
         const response = await axiosInstance.get('/auth/me')
         return response.data
     },
 
-    logout: () => {
-        localStorage.removeItem('auth_token')
+    logout: async () => {
+        // Server responds with Set-Cookie to expire auth_token.
+        await axiosInstance.post('/auth/logout')
     }
 }

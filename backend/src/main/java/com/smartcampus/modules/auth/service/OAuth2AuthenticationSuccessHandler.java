@@ -20,7 +20,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.HttpHeaders;
 
 @Component
@@ -30,17 +29,20 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final JwtService jwtService;
+    private final AuthCookieService authCookieService;
     private final String frontendUrl;
 
     public OAuth2AuthenticationSuccessHandler(
             UserRepository userRepository,
             RoleRepository roleRepository,
             JwtService jwtService,
+            AuthCookieService authCookieService,
             @Value("${app.frontend-url}") String frontendUrl
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.jwtService = jwtService;
+        this.authCookieService = authCookieService;
         this.frontendUrl = frontendUrl;
     }
 
@@ -56,6 +58,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String picture = oauth2User.getAttribute("picture");
 
         if (email == null || email.isBlank()) {
+            // Email is required to map OAuth user to a campus account.
             String redirectUrl = UriComponentsBuilder
                     .fromUriString(frontendUrl + "/login")
                     .queryParam("error", "oauth_email_missing")
@@ -79,6 +82,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         final String firstName = resolvedFirstName;
         final String lastName = resolvedLastName;
 
+        // Update existing user if present, otherwise create a new OAuth user.
         User user = userRepository.findByEmail(email)
                 .map(existing -> {
                     existing.setProvider(AuthProvider.GOOGLE);
@@ -113,19 +117,11 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         User savedUser = userRepository.save(user);
         String token = jwtService.generateToken(savedUser);
-
-        ResponseCookie cookie = ResponseCookie.from("auth_token", token)
-                .httpOnly(true)
-                .secure(false) // will set to true in production
-                .path("/")
-                .maxAge(24 * 60 * 60)
-                .sameSite("Lax")
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        // Use HttpOnly cookie so token is not exposed to frontend JS.
+        response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString());
 
         String redirectUrl = UriComponentsBuilder
-                .fromUriString(frontendUrl + "/dashboard")
+            .fromUriString(frontendUrl + "/dashboard")
                 .build()
                 .toUriString();
 
