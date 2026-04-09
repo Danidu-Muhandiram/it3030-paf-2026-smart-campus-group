@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     CalendarCheck,
@@ -11,8 +11,25 @@ import {
     ChevronLeft,
     ChevronRight
 } from 'lucide-react';
+import { useAuth } from '../../features/auth/AuthContext';
 
 export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+    const { logout } = useAuth();
+    const navigate = useNavigate();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+    const handleLogout = async () => {
+        if (isLoggingOut) {
+            return;
+        }
+        setIsLoggingOut(true);
+        try {
+            await logout();
+            navigate('/login', { replace: true });
+        } finally {
+            setIsLoggingOut(false);
+        }
+    };
     // Navigation items based on requirements
     const navItems = [
         { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
@@ -85,9 +102,12 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <button
                     className="w-full flex items-center px-3 py-2.5 rounded-lg text-red-300 hover:bg-red-500/10 transition-colors mt-2"
                     title={isCollapsed ? 'Log out' : ''}
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    aria-busy={isLoggingOut}
                 >
                     <LogOut size={20} className="shrink-0" />
-                    {!isCollapsed && <span className="ml-3">Log out</span>}
+                    {!isCollapsed && <span className="ml-3">{isLoggingOut ? 'Logging out...' : 'Log out'}</span>}
                 </button>
             </div>
         </aside>

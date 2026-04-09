@@ -28,12 +28,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        // JWT is stored in HttpOnly cookie, 
+        // so read from cookies instead of Authorization header.
         String token = getTokenFromCookies(request);
         if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        // Skip when token is invalid or another auth mechanism already set authentication.
         if (!jwtService.isTokenValid(token) || SecurityContextHolder.getContext().getAuthentication() != null) {
             filterChain.doFilter(request, response);
             return;

@@ -1,11 +1,26 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
 import { authService } from '../authService';
+import { useAuth } from '../AuthContext';
 
 export const RegisterPage = () => {
+    const [isRedirecting, setIsRedirecting] = useState(false);
+    const [loginError, setLoginError] = useState('');
+    const { status } = useAuth();
+    const navigate = useNavigate();
+    // Keep behavior consistent with 
+    // login page for post-OAuth redirect.
+    const hasStartedLoginRef = useRef(false);
+
+    useEffect(() => {
+        if (status === 'authenticated' && hasStartedLoginRef.current) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [status, navigate]);
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -20,6 +35,19 @@ export const RegisterPage = () => {
             opacity: 1,
             y: 0,
             transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }
+        }
+    };
+
+    const handleGoogleLogin = () => {
+        setIsRedirecting(true);
+        setLoginError('');
+        // Mark user intent just before leaving page for OAuth.
+        hasStartedLoginRef.current = true;
+        try {
+            authService.startGoogleLogin();
+        } catch (err) {
+            setIsRedirecting(false);
+            setLoginError('Unable to start Google login. Please try again.');
         }
     };
 
@@ -235,12 +263,16 @@ export const RegisterPage = () => {
                         <button 
                             type="button"
                             aria-label="Sign in with Google"
-                            onClick={authService.startGoogleLogin}
-                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md"
+                            onClick={handleGoogleLogin}
+                            disabled={isRedirecting}
+                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             <FcGoogle className="w-5 h-5" />
-                            Google
+                            {isRedirecting ? 'Redirecting...' : 'Google'}
                         </button>
+                        {loginError && (
+                            <p className="text-sm text-red-600 pt-3" role="alert">{loginError}</p>
+                        )}
                     </form>
                 </div>
             </div>
