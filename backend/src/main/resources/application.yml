@@ -30,7 +30,7 @@ spring:
               - profile
 
 server:
-  port: 8080
+  port: 8085
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
