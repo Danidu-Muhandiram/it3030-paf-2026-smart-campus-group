@@ -88,6 +88,7 @@ export const Sidebar = ({
                     <NavLink
                         key={item.path}
                         to={item.path}
+                        end={item.end ?? false}
                         onClick={handleNavClick}
                         className={({ isActive }) => `
                             flex items-center px-3 py-3 rounded-lg transition-colors
