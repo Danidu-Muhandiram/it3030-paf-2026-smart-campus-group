@@ -23,11 +23,11 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Build backend
+      - name: Build & Test backend
         working-directory: backend
         run: |
           chmod +x mvnw
-          ./mvnw -B clean package -DskipTests
+          ./mvnw -B clean verify
 
 
   frontend:
@@ -45,8 +45,14 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test -- --watchAll=false --passWithNoTests
+
       - name: Build frontend
         working-directory: frontend
-        run: |
-          npm ci
-          npm run build
+        run: npm run build
