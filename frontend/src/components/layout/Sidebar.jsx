@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../features/auth/AuthContext';
 
-export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
+export const Sidebar = ({ isCollapsed, toggleSidebar, isMobileOpen, onMobileClose }) => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -25,10 +25,15 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
         setIsLoggingOut(true);
         try {
             await logout();
+            onMobileClose?.();
             navigate('/login', { replace: true });
         } finally {
             setIsLoggingOut(false);
         }
+    };
+
+    const handleNavClick = () => {
+        onMobileClose?.();
     };
     // Navigation items based on requirements
     const navItems = [
@@ -39,16 +44,28 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
     ];
 
     return (
-        <aside
-            className={`
-                bg-primary text-white h-screen flex flex-col transition-all duration-300 relative
-                ${isCollapsed ? 'w-20' : 'w-64'}
-            `}
-        >
+        <>
+            {isMobileOpen && (
+                <div
+                    className="fixed inset-0 z-30 bg-black/35 md:hidden"
+                    onClick={onMobileClose}
+                    aria-hidden="true"
+                />
+            )}
+
+            <aside
+                className={`
+                    fixed inset-y-0 left-0 z-40 h-screen w-64 bg-primary text-white flex flex-col
+                    transform transition-transform duration-300
+                    ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+                    md:relative md:translate-x-0 md:z-auto
+                    ${isCollapsed ? 'md:w-20' : 'md:w-64'}
+                `}
+            >
             {/* Collapse toggle button */}
             <button
                 onClick={toggleSidebar}
-                className="absolute -right-3 top-8 bg-white text-primary rounded-full p-1 border border-gray-200 shadow-md hover:bg-gray-50 z-10 focus:outline-none"
+                className="absolute -right-3 top-8 hidden md:flex items-center justify-center bg-white text-primary rounded-full p-1 border border-gray-200 shadow-md hover:bg-gray-50 z-10 focus:outline-none"
             >
                 {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
@@ -58,11 +75,9 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center shrink-0">
                     <Building2 className="w-5 h-5 text-white" />
                 </div>
-                {!isCollapsed && (
-                    <span className="ml-3 font-bold text-lg whitespace-nowrap overflow-hidden transition-all">
-                        Smart Campus
-                    </span>
-                )}
+                <span className={`ml-3 font-bold text-lg whitespace-nowrap overflow-hidden transition-all ${isCollapsed ? 'md:hidden' : ''}`}>
+                    Smart Campus
+                </span>
             </div>
 
             {/* Navigation Links */}
@@ -71,6 +86,7 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                     <NavLink
                         key={item.path}
                         to={item.path}
+                        onClick={handleNavClick}
                         className={({ isActive }) => `
                             flex items-center px-3 py-3 rounded-lg transition-colors
                             ${isActive
@@ -81,11 +97,9 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                         title={isCollapsed ? item.label : ''}
                     >
                         <span className="shrink-0">{item.icon}</span>
-                        {!isCollapsed && (
-                            <span className="ml-3 whitespace-nowrap overflow-hidden">
-                                {item.label}
-                            </span>
-                        )}
+                        <span className={`ml-3 whitespace-nowrap overflow-hidden ${isCollapsed ? 'md:hidden' : ''}`}>
+                            {item.label}
+                        </span>
                     </NavLink>
                 ))}
             </nav>
@@ -95,10 +109,13 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <button
                     className="w-full flex items-center px-3 py-2.5 rounded-lg text-blue-100/70 hover:bg-white/5 hover:text-white transition-colors"
                     title={isCollapsed ? 'Settings' : ''}
-                    onClick={() => navigate('/dashboard/profile')}
+                    onClick={() => {
+                        onMobileClose?.();
+                        navigate('/dashboard/profile');
+                    }}
                 >
                     <Settings size={20} className="shrink-0" />
-                    {!isCollapsed && <span className="ml-3">Profile</span>}
+                    <span className={`ml-3 ${isCollapsed ? 'md:hidden' : ''}`}>Profile</span>
                 </button>
                 <button
                     className="w-full flex items-center px-3 py-2.5 rounded-lg text-red-300 hover:bg-red-500/10 transition-colors mt-2"
@@ -108,9 +125,10 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                     aria-busy={isLoggingOut}
                 >
                     <LogOut size={20} className="shrink-0" />
-                    {!isCollapsed && <span className="ml-3">{isLoggingOut ? 'Logging out...' : 'Log out'}</span>}
+                    <span className={`ml-3 ${isCollapsed ? 'md:hidden' : ''}`}>{isLoggingOut ? 'Logging out...' : 'Log out'}</span>
                 </button>
             </div>
-        </aside>
+            </aside>
+        </>
     );
 };
