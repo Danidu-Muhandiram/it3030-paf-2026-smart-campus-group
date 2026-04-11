@@ -1,9 +1,11 @@
 import axiosInstance from '../../services/axios'
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085'
+
 export const authService = {
     startGoogleLogin: () => {
         // OAuth start with full page navigation (not axios/fetch).
-        window.location.href = 'http://localhost:8080/oauth2/authorization/google'
+        window.location.href = `${apiBaseUrl}/oauth2/authorization/google`
     },
 
     fetchCurrentUser: async () => {

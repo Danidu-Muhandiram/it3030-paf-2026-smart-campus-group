@@ -1,18 +1,8 @@
 import React from 'react';
 import { Bell, Search, Menu } from 'lucide-react';
-import { useAuth } from '../../features/auth/AuthContext';
+import { AccountMenu } from './AccountMenu';
 
 export const TopNav = ({ toggleSidebar, isSidebarCollapsed }) => {
-    const { user } = useAuth();
-    const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'User';
-    const roleLabel = user?.role || 'Member';
-    const initials = displayName
-        .split(' ')
-        .filter((part) => part)
-        .map((part) => part[0])
-        .slice(0, 2)
-        .join('') || 'U';
-
     return (
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-10">
             {/* Left side: Mobile menu toggle and Search */}
@@ -55,16 +45,7 @@ export const TopNav = ({ toggleSidebar, isSidebarCollapsed }) => {
                 {/* Divider */}
                 <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
 
-                {/* User Profile */}
-                <button className="flex items-center gap-3 focus:outline-none rounded-lg hover:bg-gray-50 p-1 pr-2 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                        {initials}
-                    </div>
-                    <div className="hidden md:flex flex-col items-start translate-y-[-1px]">
-                        <span className="text-sm font-medium text-text-main leading-tight">{displayName}</span>
-                        <span className="text-xs text-text-muted leading-tight">{roleLabel}</span>
-                    </div>
-                </button>
+                <AccountMenu />
             </div>
         </header>
     );
