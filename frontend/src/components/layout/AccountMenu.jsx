@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, UserCircle2, Settings, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth/AuthContext';
 
@@ -28,6 +28,7 @@ export const AccountMenu = () => {
     }, [profilePictureUrl, user?.id]);
 
     useEffect(() => {
+        // Close the menu when clicking outside or pressing Escape.
         const handleClickOutside = (event) => {
             if (menuContainerRef.current && !menuContainerRef.current.contains(event.target)) {
                 setMenuOpen(false);
@@ -62,6 +63,12 @@ export const AccountMenu = () => {
         } finally {
             setIsLoggingOut(false);
         }
+    };
+
+    const handleOpenProfile = () => {
+        // Keep navigation and menu state in sync.
+        setMenuOpen(false);
+        navigate('/dashboard/profile');
     };
 
     return (
@@ -116,6 +123,15 @@ export const AccountMenu = () => {
                     </div>
 
                     <div className="p-2">
+                        {/* Profile is implemented, settings page can be wire later. */}
+                        <button
+                            role="menuitem"
+                            onClick={handleOpenProfile}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-text-main hover:bg-gray-50"
+                        >
+                            <UserCircle2 size={16} />
+                            My profile
+                        </button>
                         <button
                             role="menuitem"
                             disabled

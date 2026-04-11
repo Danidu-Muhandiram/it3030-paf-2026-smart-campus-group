@@ -95,9 +95,10 @@ export const Sidebar = ({ isCollapsed, toggleSidebar }) => {
                 <button
                     className="w-full flex items-center px-3 py-2.5 rounded-lg text-blue-100/70 hover:bg-white/5 hover:text-white transition-colors"
                     title={isCollapsed ? 'Settings' : ''}
+                    onClick={() => navigate('/dashboard/profile')}
                 >
                     <Settings size={20} className="shrink-0" />
-                    {!isCollapsed && <span className="ml-3">Settings</span>}
+                    {!isCollapsed && <span className="ml-3">Profile</span>}
                 </button>
                 <button
                     className="w-full flex items-center px-3 py-2.5 rounded-lg text-red-300 hover:bg-red-500/10 transition-colors mt-2"

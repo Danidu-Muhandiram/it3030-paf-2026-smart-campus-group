@@ -4,6 +4,7 @@ import { RegisterPage } from '../features/auth/pages/RegisterPage'
 import { LoginPage } from '../features/auth/pages/LoginPage'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { DashboardOverview } from '../features/dashboard/pages/DashboardOverview'
+import { ProfilePage } from '../features/dashboard/pages/ProfilePage'
 import { useAuth } from '../features/auth/AuthContext'
 
 const AuthLoading = () => (
@@ -40,6 +41,15 @@ export function AppRoutes() {
                 <RequireAuth>
                     <DashboardLayout>
                         <DashboardOverview />
+                    </DashboardLayout>
+                </RequireAuth>
+            } />
+
+            {/* Account profile section */}
+            <Route path="/dashboard/profile" element={
+                <RequireAuth>
+                    <DashboardLayout>
+                        <ProfilePage />
                     </DashboardLayout>
                 </RequireAuth>
             } />
