@@ -3,6 +3,9 @@ import { Bell, Search, Menu } from 'lucide-react';
 import { AccountMenu } from './AccountMenu';
 
 export const TopNav = ({ toggleSidebar, isSidebarCollapsed }) => {
+    const notificationCount = 3;
+    const badgeText = notificationCount > 9 ? '9+' : String(notificationCount);
+
     return (
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 z-10">
             {/* Left side: Mobile menu toggle and Search */}
@@ -36,10 +39,15 @@ export const TopNav = ({ toggleSidebar, isSidebarCollapsed }) => {
                 </button>
 
                 {/* Notifications */}
-                <button className="relative p-2 text-gray-400 hover:text-primary transition-colors focus:outline-none rounded-full hover:bg-gray-50">
-                    <Bell size={20} />
+                <button
+                    className="relative flex h-10 w-10 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-500 transition-colors hover:bg-red-100 focus:outline-none"
+                    aria-label={`${notificationCount} notifications`}
+                >
+                    <Bell size={19} className="stroke-[2.2]" />
                     {/* Notification badge */}
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                    <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-bold leading-5 text-center ring-2 ring-white shadow-sm">
+                        {badgeText}
+                    </span>
                 </button>
 
                 {/* Divider */}

@@ -4,9 +4,18 @@ import { TopNav } from './TopNav';
 
 export const DashboardLayout = ({ children }) => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-    const toggleSidebar = () => {
+    const toggleDesktopSidebar = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
+    };
+
+    const toggleMobileSidebar = () => {
+        setIsMobileSidebarOpen((prev) => !prev);
+    };
+
+    const closeMobileSidebar = () => {
+        setIsMobileSidebarOpen(false);
     };
 
     return (
@@ -14,14 +23,16 @@ export const DashboardLayout = ({ children }) => {
             {/* Sidebar Navigation */}
             <Sidebar
                 isCollapsed={isSidebarCollapsed}
-                toggleSidebar={toggleSidebar}
+                toggleSidebar={toggleDesktopSidebar}
+                isMobileOpen={isMobileSidebarOpen}
+                onMobileClose={closeMobileSidebar}
             />
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Top Header */}
                 <TopNav
-                    toggleSidebar={toggleSidebar}
+                    toggleSidebar={toggleMobileSidebar}
                     isSidebarCollapsed={isSidebarCollapsed}
                 />
 

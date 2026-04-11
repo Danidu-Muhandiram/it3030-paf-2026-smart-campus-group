@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatCard } from '../components/StatCard';
 import {
     Building2,
@@ -15,18 +15,31 @@ import { useAuth } from '../../auth/AuthContext';
 export const DashboardOverview = () => {
     const { user } = useAuth();
     const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
+    const [now, setNow] = useState(new Date());
+
+    useEffect(() => {
+        // Keep header timestamp fresh while user is on the dashboard.
+        const timer = setInterval(() => setNow(new Date()), 30000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const currentDateTime = now.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    });
 
     // Mock data for the dashboard
     const stats = [
         { title: 'Total Resources', value: '124', icon: <Building2 size={24} />, colorClass: 'bg-blue-50 text-blue-600' },
-        { title: 'My Bookings', value: '3', icon: <CalendarCheck size={24} />, trend: 'up', trendValue: '1', colorClass: 'bg-green-50 text-green-600' },
-        { title: 'Open Tickets', value: '2', icon: <Ticket size={24} />, trend: 'down', trendValue: '1', colorClass: 'bg-orange-50 text-orange-600' },
+        { title: 'My Bookings', value: '3', icon: <CalendarCheck size={24} />, colorClass: 'bg-green-50 text-green-600' },
+        { title: 'Open Tickets', value: '2', icon: <Ticket size={24} />, colorClass: 'bg-orange-50 text-orange-600' },
     ];
 
     const quickActions = [
         { title: 'Book a Room', description: 'Schedule a lecture hall or meeting room.', icon: <CalendarCheck size={20} />, path: '/dashboard/bookings/new' },
         { title: 'Report Incident', description: 'Log a fault or maintenance request.', icon: <PlusCircle size={20} />, path: '/dashboard/tickets/new' },
         { title: 'Search Equipment', description: 'Find and book available equipment.', icon: <Search size={20} />, path: '/dashboard/facilities?type=equipment' },
+        { title: 'Browse Resources', description: 'Explore available rooms, labs, and campus assets.', icon: <Building2 size={20} />, path: '/dashboard/facilities' },
     ];
 
     const recentActivity = [
@@ -41,12 +54,12 @@ export const DashboardOverview = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-text-main">Welcome back, {displayName}!</h1>
-                    <p className="text-text-muted mt-1">Here's what's happening at the campus today.</p>
+                    <p className="text-text-muted mt-1">Track your bookings and campus requests in real time.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <span className="text-sm text-text-muted bg-white border border-gray-200 px-3 py-1.5 rounded-lg flex items-center gap-2">
                         <Clock size={16} />
-                        March 14, 2026
+                        {currentDateTime}
                     </span>
                 </div>
             </div>
