@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.Map;
 
@@ -30,7 +31,12 @@ public class AuthController {
     @GetMapping("/public/google-url")
     public ResponseEntity<Map<String, String>> googleLoginUrl() {
         // Frontend uses this to start OAuth with a full browser redirect.
-        return ResponseEntity.ok(Map.of("url", "http://localhost:8080/oauth2/authorization/google"));
+        String oauthUrl = ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .path("/oauth2/authorization/google")
+                .toUriString();
+
+        return ResponseEntity.ok(Map.of("url", oauthUrl));
     }
 
     @GetMapping("/me")
