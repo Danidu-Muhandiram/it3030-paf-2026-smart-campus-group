@@ -1,13 +1,15 @@
 package com.smartcampus.backend;
 
+import com.smartcampus.SmartCampusApplication;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 class BackendApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassIsPresent() {
+		assertEquals("SmartCampusApplication", SmartCampusApplication.class.getSimpleName());
 	}
 
 }

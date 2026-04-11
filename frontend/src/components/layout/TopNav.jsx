@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, Search, User, Menu } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
+import { AccountMenu } from './AccountMenu';
 
 export const TopNav = ({ toggleSidebar, isSidebarCollapsed }) => {
     return (
@@ -44,16 +45,7 @@ export const TopNav = ({ toggleSidebar, isSidebarCollapsed }) => {
                 {/* Divider */}
                 <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
 
-                {/* User Profile */}
-                <button className="flex items-center gap-3 focus:outline-none rounded-lg hover:bg-gray-50 p-1 pr-2 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                        JD
-                    </div>
-                    <div className="hidden md:flex flex-col items-start translate-y-[-1px]">
-                        <span className="text-sm font-medium text-text-main leading-tight">Achini Perera</span>
-                        <span className="text-xs text-text-muted leading-tight">Student</span>
-                    </div>
-                </button>
+                <AccountMenu />
             </div>
         </header>
     );

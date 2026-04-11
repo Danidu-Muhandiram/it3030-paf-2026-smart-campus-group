@@ -2,6 +2,8 @@
 
 Monorepo containing the backend Spring Boot service and the React (Vite) frontend for the Smart Campus Operations Hub.
 
+![CI](https://github.com/Danidu-Muhandiram/it3030-paf-2026-smart-campus-group/actions/workflows/main.yml/badge.svg)
+
 ## Project Structure
 
 ```
@@ -53,6 +55,16 @@ Monorepo containing the backend Spring Boot service and the React (Vite) fronten
 | Health endpoint | `backend/src/main/java/com/smartcampus/controller/HealthController.java` | `GET /api/health` returns a simple JSON payload confirming uptime. |
 | API response wrapper | `backend/src/main/java/com/smartcampus/dto/ApiResponse.java` | Provides a consistent response shape with `success`, `message`, `data`, and timestamp. |
 | Global exception handler | `backend/src/main/java/com/smartcampus/exception/GlobalExceptionHandler.java` | Handles validation failures and unexpected errors. |
+| Database configuration | `backend/src/main/resources/application.yml` | Configured for MySQL (`jdbc:mysql://localhost:3306/smartcampus`) with `ddl-auto=update` and SQL logging enabled. |
+
+### Backend Database Setup
+
+1. Install MySQL 8.x (or compatible) locally and ensure it is running on port `3306`.
+2. Create an empty schema named `smartcampus` (matching the JDBC URL in `application.yml`).
+3. Update the `spring.datasource.username` and `spring.datasource.password` fields in `backend/src/main/resources/application.yml` to match your local credentials.
+4. Optional: adjust the Hibernate dialect or `ddl-auto` strategy in the same file if you need stricter schema management.
+
+> The backend already includes the `mysql-connector-j` runtime dependency in `backend/pom.xml`, so no extra driver installation is required.
 
 ## Current Frontend Highlights
 

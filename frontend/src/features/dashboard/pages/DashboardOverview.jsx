@@ -10,8 +10,12 @@ import {
     Clock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthContext';
 
 export const DashboardOverview = () => {
+    const { user } = useAuth();
+    const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
+
     // Mock data for the dashboard
     const stats = [
         { title: 'Total Resources', value: '124', icon: <Building2 size={24} />, colorClass: 'bg-blue-50 text-blue-600' },
@@ -36,7 +40,7 @@ export const DashboardOverview = () => {
             {/* Welcome Section */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-text-main">Welcome back, John!</h1>
+                    <h1 className="text-2xl font-bold text-text-main">Welcome back, {displayName}!</h1>
                     <p className="text-text-muted mt-1">Here's what's happening at the campus today.</p>
                 </div>
                 <div className="flex items-center gap-3">

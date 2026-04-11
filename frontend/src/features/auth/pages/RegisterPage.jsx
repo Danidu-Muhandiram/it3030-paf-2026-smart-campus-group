@@ -1,9 +1,26 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Rocket, Settings, CheckCircle2, Building2, ArrowLeft } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
+import { authService } from '../authService';
+import { useAuth } from '../AuthContext';
 
 export const RegisterPage = () => {
+    const [isRedirecting, setIsRedirecting] = useState(false);
+    const [loginError, setLoginError] = useState('');
+    const { status } = useAuth();
+    const navigate = useNavigate();
+    // Keep behavior consistent with 
+    // login page for post-OAuth redirect.
+    const hasStartedLoginRef = useRef(false);
+
+    useEffect(() => {
+        if (status === 'authenticated' && hasStartedLoginRef.current) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [status, navigate]);
+
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -18,6 +35,19 @@ export const RegisterPage = () => {
             opacity: 1,
             y: 0,
             transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }
+        }
+    };
+
+    const handleGoogleLogin = () => {
+        setIsRedirecting(true);
+        setLoginError('');
+        // Mark user intent just before leaving page for OAuth.
+        hasStartedLoginRef.current = true;
+        try {
+            authService.startGoogleLogin();
+        } catch (err) {
+            setIsRedirecting(false);
+            setLoginError('Unable to start Google login. Please try again.');
         }
     };
 
@@ -216,10 +246,33 @@ export const RegisterPage = () => {
                             </label>
                         </div>
 
-                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-colors">
+                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
                             Create Account
                             <Rocket className="w-4 h-4" />
                         </button>
+
+                        <div className="relative mt-6 mb-1">
+                            <div className="absolute inset-0 flex items-center">
+                                <div className="w-full border-t border-gray-200"></div>
+                            </div>
+                            <div className="relative flex justify-center text-sm font-medium">
+                                <span className="bg-white px-4 text-text-muted">Or sign up with</span>
+                            </div>
+                        </div>
+
+                        <button 
+                            type="button"
+                            aria-label="Sign in with Google"
+                            onClick={handleGoogleLogin}
+                            disabled={isRedirecting}
+                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            <FcGoogle className="w-5 h-5" />
+                            {isRedirecting ? 'Redirecting...' : 'Google'}
+                        </button>
+                        {loginError && (
+                            <p className="text-sm text-red-600 pt-3" role="alert">{loginError}</p>
+                        )}
                     </form>
                 </div>
             </div>
