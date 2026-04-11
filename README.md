@@ -2,6 +2,8 @@
 
 Monorepo containing the backend Spring Boot service and the React (Vite) frontend for the Smart Campus Operations Hub.
 
+![CI](https://github.com/Danidu-Muhandiram/it3030-paf-2026-smart-campus-group/actions/workflows/main.yml/badge.svg)
+
 ## Project Structure
 
 ```
