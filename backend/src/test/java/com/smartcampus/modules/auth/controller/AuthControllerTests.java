@@ -2,6 +2,7 @@ package com.smartcampus.modules.auth.controller;
 
 import com.smartcampus.modules.auth.repository.UserRepository;
 import com.smartcampus.modules.auth.service.AuthCookieService;
+import com.smartcampus.modules.auth.service.LocalAuthService;
 import com.smartcampus.security.JwtService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,9 @@ class AuthControllerTests {
 
     @MockBean
     private AuthCookieService authCookieService;
+
+    @MockBean
+    private LocalAuthService localAuthService;
 
     @MockBean
     private JwtService jwtService;
