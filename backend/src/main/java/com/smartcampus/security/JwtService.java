@@ -21,10 +21,10 @@ public class JwtService {
 
     public JwtService(
             @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiration-ms}") long expirationMs
+            @Value("${app.auth.session.max-age-seconds:86400}") long sessionMaxAgeSeconds
     ) {
         this.signingKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
-        this.expirationMs = expirationMs;
+        this.expirationMs = sessionMaxAgeSeconds * 1000;
     }
 
     public String generateToken(User user) {

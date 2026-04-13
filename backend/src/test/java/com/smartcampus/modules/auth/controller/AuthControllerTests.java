@@ -49,18 +49,27 @@ class AuthControllerTests {
 
     @Test
     void logoutClearsCookie() throws Exception {
-        ResponseCookie cookie = ResponseCookie.from("auth_token", "")
+        ResponseCookie authCookie = ResponseCookie.from("auth_token", "")
                 .httpOnly(true)
                 .path("/")
                 .maxAge(0)
                 .sameSite("Lax")
                 .build();
 
-        when(authCookieService.clearAuthCookie()).thenReturn(cookie);
+        ResponseCookie sessionCookie = ResponseCookie.from("JSESSIONID", "")
+            .httpOnly(true)
+            .path("/")
+            .maxAge(0)
+            .sameSite("Lax")
+            .build();
+
+        when(authCookieService.clearAuthCookie()).thenReturn(authCookie);
+        when(authCookieService.clearSessionCookie()).thenReturn(sessionCookie);
 
         mockMvc.perform(post("/api/auth/logout"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.SET_COOKIE, Matchers.containsString("auth_token=")))
-                .andExpect(header().string(HttpHeaders.SET_COOKIE, Matchers.containsString("Max-Age=0")));
+            .andExpect(header().stringValues(HttpHeaders.SET_COOKIE, Matchers.hasItem(Matchers.containsString("auth_token="))))
+            .andExpect(header().stringValues(HttpHeaders.SET_COOKIE, Matchers.hasItem(Matchers.containsString("JSESSIONID="))))
+            .andExpect(header().stringValues(HttpHeaders.SET_COOKIE, Matchers.hasItem(Matchers.containsString("Max-Age=0"))));
     }
 }

@@ -129,7 +129,8 @@ public class AuthController {
 
         // Clear HttpOnly auth cookie on the client.
         return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, authCookieService.clearAuthCookie().toString())
+            .header(HttpHeaders.SET_COOKIE, authCookieService.clearAuthCookie().toString())
+            .header(HttpHeaders.SET_COOKIE, authCookieService.clearSessionCookie().toString())
                 .body(Map.of("message", "Logged out"));
     }
 
