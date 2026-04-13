@@ -8,8 +8,13 @@ import { useAuth } from '../AuthContext';
 export const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginError, setLoginError] = useState('');
-    const { status } = useAuth();
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    });
+    const { status, refreshUser } = useAuth();
     const navigate = useNavigate();
     // Prevent automatic dashboard jump 
     // unless Google flow started from this page.
@@ -31,6 +36,33 @@ export const LoginPage = () => {
         } catch (err) {
             setIsRedirecting(false);
             setLoginError('Unable to start Google login. Please try again.');
+        }
+    };
+
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleLogin = async (event) => {
+        event.preventDefault();
+        setLoginError('');
+        setIsSubmitting(true);
+
+        try {
+            // Local email/password login; backend sets auth_token cookie.
+            await authService.login(formData);
+            // Refresh context from /auth/me so route guards and UI update immediately.
+            await refreshUser();
+            navigate('/dashboard', { replace: true });
+        } catch (err) {
+            const message = err?.response?.data?.message || 'Login failed. Please try again.';
+            setLoginError(message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -110,12 +142,15 @@ export const LoginPage = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                    <form className="space-y-5" onSubmit={handleLogin}>
                         <div className="space-y-1.5">
                             <label className="text-md font-semibold text-text-muted">University Email</label>
                             <input
                                 type="email"
+                                name="email"
                                 placeholder="idnumber@my.sliit.lk"
+                                value={formData.email}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main transition-all"
                             />
                         </div>
@@ -128,7 +163,10 @@ export const LoginPage = () => {
                             <div className="relative">
                                 <input
                                     type={showPassword ? "text" : "password"}
+                                    name="password"
                                     placeholder="••••••••"
+                                    value={formData.password}
+                                    onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main pr-10 transition-all focus:shadow-[0_0_0_4px_rgba(25,118,210,0.1)]"
                                 />
                                 <button
@@ -154,8 +192,12 @@ export const LoginPage = () => {
                             </label>
                         </div>
 
-                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-8 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
-                            Log In
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-8 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? 'Logging in...' : 'Log In'}
                             <LogIn className="w-4 h-4" />
                         </button>
 

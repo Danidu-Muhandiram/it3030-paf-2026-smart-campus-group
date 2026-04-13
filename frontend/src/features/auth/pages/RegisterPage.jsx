@@ -8,8 +8,17 @@ import { useAuth } from '../AuthContext';
 
 export const RegisterPage = () => {
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginError, setLoginError] = useState('');
-    const { status } = useAuth();
+    const [registerError, setRegisterError] = useState('');
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        universityId: '',
+        password: ''
+    });
+    const { status, refreshUser } = useAuth();
     const navigate = useNavigate();
     // Keep behavior consistent with 
     // login page for post-OAuth redirect.
@@ -48,6 +57,31 @@ export const RegisterPage = () => {
         } catch (err) {
             setIsRedirecting(false);
             setLoginError('Unable to start Google login. Please try again.');
+        }
+    };
+
+    const handleInputChange = (event) => {
+        const { name, value } = event.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleRegister = async (event) => {
+        event.preventDefault();
+        setRegisterError('');
+        setIsSubmitting(true);
+
+        try {
+            await authService.register(formData);
+            await refreshUser();
+            navigate('/dashboard', { replace: true });
+        } catch (err) {
+            const message = err?.response?.data?.message || 'Unable to create account. Please try again.';
+            setRegisterError(message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -167,14 +201,17 @@ export const RegisterPage = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-3.5" onSubmit={(e) => e.preventDefault()}>
+                    <form className="space-y-3.5" onSubmit={handleRegister}>
 
                         <div className="flex flex-col sm:flex-row gap-4">
                             <div className="space-y-1 w-full">
                                 <label className="text-md font-semibold text-text-muted">First Name</label>
                                 <input
                                     type="text"
+                                    name="firstName"
                                     placeholder="Harsha"
+                                    value={formData.firstName}
+                                    onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
@@ -182,7 +219,10 @@ export const RegisterPage = () => {
                                 <label className="text-md font-semibold text-text-muted">Last Name</label>
                                 <input
                                     type="text"
+                                    name="lastName"
                                     placeholder="Fernando"
+                                    value={formData.lastName}
+                                    onChange={handleInputChange}
                                     className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
                             </div>
@@ -192,43 +232,34 @@ export const RegisterPage = () => {
                             <label className="text-md font-semibold text-text-muted">University Email</label>
                             <input
                                 type="email"
+                                name="email"
                                 placeholder="idnumber@my.sliit.lk"
+                                value={formData.email}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="space-y-1 w-full sm:w-1/3">
-                                <label className="text-md font-semibold text-text-muted">Role</label>
-                                <div className="relative">
-                                    <select className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm appearance-none cursor-pointer text-text-main bg-white">
-                                        <option value="student">Student</option>
-                                        <option value="staff">Staff</option>
-                                        <option value="faculty">Faculty</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1 w-full sm:w-2/3">
-                                <label className="text-md font-semibold text-text-muted">ID Number</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. IT2612345678"
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
-                                />
-                            </div>
+                        <div className="space-y-1">
+                            <label className="text-md font-semibold text-text-muted">ID Number</label>
+                            <input
+                                type="text"
+                                name="universityId"
+                                placeholder="e.g. IT2612345678"
+                                value={formData.universityId}
+                                onChange={handleInputChange}
+                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                            />
                         </div>
 
                         <div className="space-y-1">
                             <label className="text-md font-semibold text-text-muted">Password</label>
                             <input
                                 type="password"
+                                name="password"
                                 placeholder="••••••••"
+                                value={formData.password}
+                                onChange={handleInputChange}
                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
                             <p className="text-[12px] text-text-light mt-1.5">Must be at least 8 characters long</p>
@@ -246,10 +277,17 @@ export const RegisterPage = () => {
                             </label>
                         </div>
 
-                        <button className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md">
-                            Create Account
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {isSubmitting ? 'Creating account...' : 'Create Account'}
                             <Rocket className="w-4 h-4" />
                         </button>
+                        {registerError && (
+                            <p className="text-sm text-red-600 pt-1" role="alert">{registerError}</p>
+                        )}
 
                         <div className="relative mt-6 mb-1">
                             <div className="absolute inset-0 flex items-center">
