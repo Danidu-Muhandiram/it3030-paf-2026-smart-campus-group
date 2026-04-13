@@ -11,16 +11,16 @@ public class AuthCookieService {
 
     private final boolean secure;
     private final String sameSite;
-    private final long maxAgeSeconds;
+    private final long sessionMaxAgeSeconds;
 
     public AuthCookieService(
             @Value("${app.auth.cookie.secure:false}") boolean secure,
             @Value("${app.auth.cookie.same-site:Lax}") String sameSite,
-            @Value("${app.auth.cookie.max-age-seconds:86400}") long maxAgeSeconds
+            @Value("${app.auth.session.max-age-seconds:86400}") long sessionMaxAgeSeconds
     ) {
         this.secure = secure;
         this.sameSite = sameSite;
-        this.maxAgeSeconds = maxAgeSeconds;
+        this.sessionMaxAgeSeconds = sessionMaxAgeSeconds;
     }
 
     public ResponseCookie createAuthCookie(String token) {
@@ -29,7 +29,7 @@ public class AuthCookieService {
                 .httpOnly(true)
                 .secure(secure)
                 .path("/")
-                .maxAge(maxAgeSeconds)
+            .maxAge(sessionMaxAgeSeconds)
                 .sameSite(sameSite)
                 .build();
     }
@@ -37,6 +37,16 @@ public class AuthCookieService {
     public ResponseCookie clearAuthCookie() {
         // Same cookie attributes + Max-Age=0 instruct browser to delete it.
         return ResponseCookie.from("auth_token", "")
+                .httpOnly(true)
+                .secure(secure)
+                .path("/")
+                .maxAge(0)
+                .sameSite(sameSite)
+                .build();
+    }
+
+    public ResponseCookie clearSessionCookie() {
+        return ResponseCookie.from("JSESSIONID", "")
                 .httpOnly(true)
                 .secure(secure)
                 .path("/")
