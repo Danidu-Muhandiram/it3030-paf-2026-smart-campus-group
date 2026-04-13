@@ -7,6 +7,7 @@ import com.smartcampus.modules.auth.repository.UserRepository;
 import com.smartcampus.modules.auth.service.AuthCookieService;
 import com.smartcampus.modules.auth.service.LocalAuthService;
 import com.smartcampus.security.JwtService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -121,7 +122,11 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Map<String, String>> logout() {
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
+        if (request.getSession(false) != null) {
+            request.getSession(false).invalidate();
+        }
+
         // Clear HttpOnly auth cookie on the client.
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, authCookieService.clearAuthCookie().toString())

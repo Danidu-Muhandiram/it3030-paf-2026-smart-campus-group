@@ -28,16 +28,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // JWT is stored in HttpOnly cookie, 
-        // so read from cookies instead of Authorization header.
-        String token = getTokenFromCookies(request);
-        if (token == null) {
+        // Keep OAuth handshake/session behavior untouched for non-API routes.
+        if (shouldNotFilter(request)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Skip when token is invalid or another auth mechanism already set authentication.
-        if (!jwtService.isTokenValid(token) || SecurityContextHolder.getContext().getAuthentication() != null) {
+        // JWT is stored in HttpOnly cookie, 
+        // so read from cookies instead of Authorization header.
+        String token = getTokenFromCookies(request);
+        if (token == null) {
+            // For API endpoints, avoid falling back to stale session authentication.
+            SecurityContextHolder.clearContext();
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if (!jwtService.isTokenValid(token)) {
+            SecurityContextHolder.clearContext();
             filterChain.doFilter(request, response);
             return;
         }
@@ -65,5 +73,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
         return null;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path == null || !path.startsWith("/api/");
     }
 }
