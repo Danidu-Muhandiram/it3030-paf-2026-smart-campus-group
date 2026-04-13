@@ -5,18 +5,22 @@ import { FcGoogle } from 'react-icons/fc';
 import { motion } from 'framer-motion';
 import { authService } from '../authService';
 import { useAuth } from '../AuthContext';
+import { getPasswordStrength, validateRegisterForm } from '../validators/authValidation';
 
 export const RegisterPage = () => {
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginError, setLoginError] = useState('');
     const [registerError, setRegisterError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [submitAttempted, setSubmitAttempted] = useState(false);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
         universityId: '',
-        password: ''
+        password: '',
+        confirmPassword: ''
     });
     const { status, refreshUser } = useAuth();
     const navigate = useNavigate();
@@ -29,6 +33,13 @@ export const RegisterPage = () => {
             navigate('/dashboard', { replace: true });
         }
     }, [status, navigate]);
+
+    useEffect(() => {
+        setFieldErrors(validateRegisterForm(formData));
+    }, [formData]);
+
+    const passwordStrength = getPasswordStrength(formData.password);
+    const isFormValid = Object.keys(fieldErrors).length === 0;
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -62,6 +73,7 @@ export const RegisterPage = () => {
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
+        setRegisterError('');
         setFormData((prev) => ({
             ...prev,
             [name]: value
@@ -70,7 +82,15 @@ export const RegisterPage = () => {
 
     const handleRegister = async (event) => {
         event.preventDefault();
+        setSubmitAttempted(true);
         setRegisterError('');
+
+        const currentErrors = validateRegisterForm(formData);
+        setFieldErrors(currentErrors);
+        if (Object.keys(currentErrors).length > 0) {
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -78,8 +98,17 @@ export const RegisterPage = () => {
             await refreshUser();
             navigate('/dashboard', { replace: true });
         } catch (err) {
-            const message = err?.response?.data?.message || 'Unable to create account. Please try again.';
-            setRegisterError(message);
+            const payload = err?.response?.data;
+            if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+                if (typeof payload.message === 'string') {
+                    setRegisterError(payload.message);
+                } else {
+                    setFieldErrors((prev) => ({ ...prev, ...payload }));
+                    setRegisterError('Please fix highlighted fields.');
+                }
+            } else {
+                setRegisterError('Unable to create account. Please try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -177,10 +206,10 @@ export const RegisterPage = () => {
             </div>
 
             {/* Right section - form */}
-            <div className="w-full md:w-1/2 h-full overflow-y-auto flex flex-col justify-start md:justify-center items-center py-6 px-4 md:py-0 relative">
+            <div className="w-full md:w-1/2 h-full overflow-y-auto flex flex-col justify-start md:justify-center items-center py-4 px-4 md:py-2 relative">
 
                 {/* Mobile header view & navigation */}
-                <div className="md:hidden w-full flex items-center justify-between mb-8 px-2 border-b border-gray-100 pb-4">
+                <div className="md:hidden w-full flex items-center justify-between mb-5 px-2 border-b border-gray-100 pb-3">
                     <Link to="/" className="text-xl font-bold text-primary flex items-center gap-2">
                         <div className="w-7 h-7 rounded bg-primary flex items-center justify-center shrink-0">
                             <Building2 className="w-4 h-4 text-white" />
@@ -193,107 +222,139 @@ export const RegisterPage = () => {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[400px] my-auto">
-                    <div className="mb-4 text-center md:text-left">
-                        <h1 className="text-2xl font-bold text-text-main mb-1.5">Create an account</h1>
-                        <p className="text-text-muted text-[15px]">
+                <div className="w-full max-w-[390px] my-auto">
+                    <div className="mb-3 text-center md:text-left">
+                        <h1 className="text-xl md:text-2xl font-bold text-text-main mb-1">Create an account</h1>
+                        <p className="text-text-muted text-sm">
                             Already have an account? <Link to="/login" className="text-primary font-medium hover:underline">Log in here</Link>
                         </p>
                     </div>
 
-                    <form className="space-y-3.5" onSubmit={handleRegister}>
+                    <form className="space-y-2.5" onSubmit={handleRegister}>
 
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <div className="space-y-1 w-full">
-                                <label className="text-md font-semibold text-text-muted">First Name</label>
+                                <label className="text-sm font-semibold text-text-muted">First Name</label>
                                 <input
                                     type="text"
                                     name="firstName"
                                     placeholder="Harsha"
                                     value={formData.firstName}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
+                                {(submitAttempted || formData.firstName) && fieldErrors.firstName && (
+                                    <p className="text-xs text-red-600">{fieldErrors.firstName}</p>
+                                )}
                             </div>
                             <div className="space-y-1 w-full">
-                                <label className="text-md font-semibold text-text-muted">Last Name</label>
+                                <label className="text-sm font-semibold text-text-muted">Last Name</label>
                                 <input
                                     type="text"
                                     name="lastName"
                                     placeholder="Fernando"
                                     value={formData.lastName}
                                     onChange={handleInputChange}
-                                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                                    className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                                 />
+                                {(submitAttempted || formData.lastName) && fieldErrors.lastName && (
+                                    <p className="text-xs text-red-600">{fieldErrors.lastName}</p>
+                                )}
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-md font-semibold text-text-muted">University Email</label>
+                            <label className="text-sm font-semibold text-text-muted">University Email</label>
                             <input
                                 type="email"
                                 name="email"
                                 placeholder="idnumber@my.sliit.lk"
                                 value={formData.email}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
+                            {(submitAttempted || formData.email) && fieldErrors.email && (
+                                <p className="text-xs text-red-600">{fieldErrors.email}</p>
+                            )}
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-md font-semibold text-text-muted">ID Number</label>
+                            <label className="text-sm font-semibold text-text-muted">ID Number</label>
                             <input
                                 type="text"
                                 name="universityId"
                                 placeholder="e.g. IT2612345678"
                                 value={formData.universityId}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
+                            {(submitAttempted || formData.universityId) && fieldErrors.universityId && (
+                                <p className="text-xs text-red-600">{fieldErrors.universityId}</p>
+                            )}
                         </div>
 
                         <div className="space-y-1">
-                            <label className="text-md font-semibold text-text-muted">Password</label>
+                            <label className="text-sm font-semibold text-text-muted">Password</label>
                             <input
                                 type="password"
                                 name="password"
                                 placeholder="••••••••"
                                 value={formData.password}
                                 onChange={handleInputChange}
-                                className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
                             />
-                            <p className="text-[12px] text-text-light mt-1.5">Must be at least 8 characters long</p>
+                            {formData.password && (
+                                <p className="text-[12px] text-text-light mt-1">Strength: {passwordStrength}</p>
+                            )}
+                            {(submitAttempted || formData.password) && fieldErrors.password && (
+                                <p className="text-xs text-red-600">{fieldErrors.password}</p>
+                            )}
                         </div>
 
-                        <div className="flex items-start gap-2.5 pt-2">
+                        <div className="space-y-1">
+                            <label className="text-sm font-semibold text-text-muted">Confirm Password</label>
+                            <input
+                                type="password"
+                                name="confirmPassword"
+                                placeholder="••••••••"
+                                value={formData.confirmPassword}
+                                onChange={handleInputChange}
+                                className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
+                            />
+                            {(submitAttempted || formData.confirmPassword) && fieldErrors.confirmPassword && (
+                                <p className="text-xs text-red-600">{fieldErrors.confirmPassword}</p>
+                            )}
+                        </div>
+
+                        <div className="flex items-start gap-2 pt-1">
                             <div className="flex items-center h-4 mt-0.5">
                                 <input
                                     type="checkbox"
                                     className="w-4 h-4 border-gray-300 rounded text-primary focus:ring-primary cursor-pointer"
                                 />
                             </div>
-                            <label className="text-md text-text-muted">
+                            <label className="text-sm text-text-muted leading-5">
                                 I agree to the <a href="#" className="font-medium text-primary hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-primary hover:underline">Privacy Policy</a>
                             </label>
                         </div>
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
-                            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-4 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                            disabled={isSubmitting || !isFormValid}
+                            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 px-4 rounded-lg mt-2.5 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? 'Creating account...' : 'Create Account'}
                             <Rocket className="w-4 h-4" />
                         </button>
                         {registerError && (
-                            <p className="text-sm text-red-600 pt-1" role="alert">{registerError}</p>
+                            <p className="text-xs text-red-600 pt-1" role="alert">{registerError}</p>
                         )}
 
-                        <div className="relative mt-6 mb-1">
+                        <div className="relative mt-3 mb-0.5">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-gray-200"></div>
                             </div>
-                            <div className="relative flex justify-center text-sm font-medium">
+                            <div className="relative flex justify-center text-xs font-medium">
                                 <span className="bg-white px-4 text-text-muted">Or sign up with</span>
                             </div>
                         </div>
@@ -303,13 +364,13 @@ export const RegisterPage = () => {
                             aria-label="Sign in with Google"
                             onClick={handleGoogleLogin}
                             disabled={isRedirecting}
-                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-[11px] px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-text-main font-semibold py-2.5 px-4 rounded-lg flex justify-center items-center gap-3 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             <FcGoogle className="w-5 h-5" />
                             {isRedirecting ? 'Redirecting...' : 'Google'}
                         </button>
                         {loginError && (
-                            <p className="text-sm text-red-600 pt-3" role="alert">{loginError}</p>
+                            <p className="text-xs text-red-600 pt-1.5" role="alert">{loginError}</p>
                         )}
                     </form>
                 </div>

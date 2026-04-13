@@ -4,12 +4,15 @@ import { LogIn, ArrowLeft, Building2, Eye, EyeOff } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
 import { authService } from '../authService';
 import { useAuth } from '../AuthContext';
+import { validateLoginForm } from '../validators/authValidation';
 
 export const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [loginError, setLoginError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [submitAttempted, setSubmitAttempted] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -26,6 +29,12 @@ export const LoginPage = () => {
         }
     }, [status, navigate]);
 
+    useEffect(() => {
+        setFieldErrors(validateLoginForm(formData));
+    }, [formData]);
+
+    const isFormValid = Object.keys(fieldErrors).length === 0;
+
     const handleGoogleLogin = () => {
         setIsRedirecting(true);
         setLoginError('');
@@ -41,6 +50,7 @@ export const LoginPage = () => {
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
+        setLoginError('');
         setFormData((prev) => ({
             ...prev,
             [name]: value
@@ -49,7 +59,15 @@ export const LoginPage = () => {
 
     const handleLogin = async (event) => {
         event.preventDefault();
+        setSubmitAttempted(true);
         setLoginError('');
+
+        const currentErrors = validateLoginForm(formData);
+        setFieldErrors(currentErrors);
+        if (Object.keys(currentErrors).length > 0) {
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -153,6 +171,9 @@ export const LoginPage = () => {
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main transition-all"
                             />
+                            {(submitAttempted || formData.email) && fieldErrors.email && (
+                                <p className="text-xs text-red-600">{fieldErrors.email}</p>
+                            )}
                         </div>
 
                         <div className="space-y-1.5 relative">
@@ -177,6 +198,9 @@ export const LoginPage = () => {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
+                            {(submitAttempted || formData.password) && fieldErrors.password && (
+                                <p className="text-xs text-red-600">{fieldErrors.password}</p>
+                            )}
                         </div>
 
                         <div className="flex items-start gap-2.5 pt-2">
@@ -194,7 +218,7 @@ export const LoginPage = () => {
 
                         <button
                             type="submit"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !isFormValid}
                             className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-[11px] px-4 rounded-lg mt-8 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? 'Logging in...' : 'Log In'}
