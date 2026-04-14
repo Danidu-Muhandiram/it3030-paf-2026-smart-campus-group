@@ -1,0 +1,269 @@
+import { useState } from 'react';
+
+// Mock data - replace with API call
+const RESOURCES = [
+  { id: '1', name: 'Conference Room A', capacity: 20 },
+  { id: '2', name: 'Meeting Room B', capacity: 10 },
+  { id: '3', name: 'Auditorium', capacity: 100 },
+  { id: '4', name: 'Board Room', capacity: 15 }
+];
+
+export function BookingRequestForm({ onSubmit }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [formData, setFormData] = useState({
+    resourceId: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    purpose: '',
+    expectedAttendees: ''
+  });
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.resourceId) {
+      newErrors.resourceId = 'Please select a resource';
+    }
+
+    if (!formData.date) {
+      newErrors.date = 'Please select a date';
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        newErrors.date = 'Cannot book in the past';
+      }
+    }
+
+    if (!formData.startTime) {
+      newErrors.startTime = 'Please enter start time';
+    }
+
+    if (!formData.endTime) {
+      newErrors.endTime = 'Please enter end time';
+    }
+
+    if (formData.startTime && formData.endTime) {
+      const [startHour, startMin] = formData.startTime.split(':');
+      const [endHour, endMin] = formData.endTime.split(':');
+      const startTotalMin = parseInt(startHour) * 60 + parseInt(startMin);
+      const endTotalMin = parseInt(endHour) * 60 + parseInt(endMin);
+
+      if (endTotalMin <= startTotalMin) {
+        newErrors.endTime = 'End time must be after start time';
+      }
+    }
+
+    if (!formData.purpose.trim()) {
+      newErrors.purpose = 'Please enter the purpose of the booking';
+    }
+
+    if (!formData.expectedAttendees) {
+      newErrors.expectedAttendees = 'Please enter number of expected attendees';
+    } else {
+      const attendees = parseInt(formData.expectedAttendees);
+      if (attendees < 1) {
+        newErrors.expectedAttendees = 'At least 1 attendee is required';
+      }
+      
+      const selectedResource = RESOURCES.find(r => r.id === formData.resourceId);
+      if (selectedResource && attendees > selectedResource.capacity) {
+        newErrors.expectedAttendees = `Exceeds room capacity of ${selectedResource.capacity}`;
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      alert('Please fix the errors in the form');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (onSubmit) {
+        await onSubmit(formData);
+      }
+
+      alert('Booking request submitted successfully');
+
+      // Reset form
+      setFormData({
+        resourceId: '',
+        date: '',
+        startTime: '',
+        endTime: '',
+        purpose: '',
+        expectedAttendees: ''
+      });
+    } catch (error) {
+      alert('Failed to submit booking request');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl border rounded-lg shadow-sm">
+      <div className="p-6 border-b">
+        <h2 className="text-2xl font-bold">Create Booking Request</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Fill in the details below to request a resource booking
+        </p>
+      </div>
+      <div className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Resource Selection */}
+          <div className="space-y-2">
+            <label htmlFor="resource" className="text-sm font-medium text-foreground">
+              Select Resource *
+            </label>
+            <select
+              id="resource"
+              value={formData.resourceId}
+              onChange={(e) => {
+                setFormData({ ...formData, resourceId: e.target.value });
+                setErrors({ ...errors, resourceId: '' });
+              }}
+              className={`w-full px-3 py-2 border rounded-md ${errors.resourceId ? 'border-red-500' : ''}`}
+            >
+              <option value="">Choose a resource...</option>
+              {RESOURCES.map((resource) => (
+                <option key={resource.id} value={resource.id}>
+                  {resource.name} (Capacity: {resource.capacity})
+                </option>
+              ))}
+            </select>
+            {errors.resourceId && (
+              <p className="text-xs text-red-600">{errors.resourceId}</p>
+            )}
+          </div>
+
+          {/* Date Selection */}
+          <div className="space-y-2">
+            <label htmlFor="date" className="text-sm font-medium text-foreground">
+              Date *
+            </label>
+            <input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => {
+                setFormData({ ...formData, date: e.target.value });
+                setErrors({ ...errors, date: '' });
+              }}
+              className={`w-full px-3 py-2 border rounded-md ${errors.date ? 'border-red-500' : ''}`}
+            />
+            {errors.date && (
+              <p className="text-xs text-red-600">{errors.date}</p>
+            )}
+          </div>
+
+          {/* Time Selection */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label htmlFor="startTime" className="text-sm font-medium text-foreground">
+                Start Time *
+              </label>
+              <input
+                id="startTime"
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => {
+                  setFormData({ ...formData, startTime: e.target.value });
+                  setErrors({ ...errors, startTime: '' });
+                }}
+                className={`w-full px-3 py-2 border rounded-md ${errors.startTime ? 'border-red-500' : ''}`}
+              />
+              {errors.startTime && (
+                <p className="text-xs text-red-600">{errors.startTime}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="endTime" className="text-sm font-medium text-foreground">
+                End Time *
+              </label>
+              <input
+                id="endTime"
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => {
+                  setFormData({ ...formData, endTime: e.target.value });
+                  setErrors({ ...errors, endTime: '' });
+                }}
+                className={`w-full px-3 py-2 border rounded-md ${errors.endTime ? 'border-red-500' : ''}`}
+              />
+              {errors.endTime && (
+                <p className="text-xs text-red-600">{errors.endTime}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Purpose */}
+          <div className="space-y-2">
+            <label htmlFor="purpose" className="text-sm font-medium text-foreground">
+              Purpose *
+            </label>
+            <textarea
+              id="purpose"
+              placeholder="Describe the purpose of this booking..."
+              value={formData.purpose}
+              onChange={(e) => {
+                setFormData({ ...formData, purpose: e.target.value });
+                setErrors({ ...errors, purpose: '' });
+              }}
+              rows={4}
+              className={`w-full px-3 py-2 border rounded-md resize-none ${errors.purpose ? 'border-red-500' : ''}`}
+            />
+            {errors.purpose && (
+              <p className="text-xs text-red-600">{errors.purpose}</p>
+            )}
+          </div>
+
+          {/* Expected Attendees */}
+          <div className="space-y-2">
+            <label htmlFor="attendees" className="text-sm font-medium text-foreground">
+              Expected Attendees *
+            </label>
+            <input
+              id="attendees"
+              type="number"
+              min="1"
+              placeholder="Enter number of expected attendees"
+              value={formData.expectedAttendees}
+              onChange={(e) => {
+                setFormData({ ...formData, expectedAttendees: e.target.value });
+                setErrors({ ...errors, expectedAttendees: '' });
+              }}
+              className={`w-full px-3 py-2 border rounded-md ${errors.expectedAttendees ? 'border-red-500' : ''}`}
+            />
+            {errors.expectedAttendees && (
+              <p className="text-xs text-red-600">{errors.expectedAttendees}</p>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50"
+          >
+            {isLoading ? 'Submitting...' : 'Submit Booking Request'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+0
