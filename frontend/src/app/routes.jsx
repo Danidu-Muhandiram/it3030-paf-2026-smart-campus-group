@@ -5,6 +5,7 @@ import { LoginPage } from '../features/auth/pages/LoginPage'
 import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { DashboardOverview } from '../features/dashboard/pages/DashboardOverview'
 import { ProfilePage } from '../features/dashboard/pages/ProfilePage'
+import { TicketsPage } from '../features/tickets/pages/TicketsPage'
 import { useAuth } from '../features/auth/AuthContext'
 
 const AuthLoading = () => (
@@ -50,6 +51,22 @@ export function AppRoutes() {
                 <RequireAuth>
                     <DashboardLayout>
                         <ProfilePage />
+                    </DashboardLayout>
+                </RequireAuth>
+            } />
+
+            <Route path="/dashboard/tickets" element={
+                <RequireAuth>
+                    <DashboardLayout>
+                        <TicketsPage />
+                    </DashboardLayout>
+                </RequireAuth>
+            } />
+
+            <Route path="/dashboard/tickets/new" element={
+                <RequireAuth>
+                    <DashboardLayout>
+                        <TicketsPage />
                     </DashboardLayout>
                 </RequireAuth>
             } />
