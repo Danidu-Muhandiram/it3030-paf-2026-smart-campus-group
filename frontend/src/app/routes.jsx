@@ -6,6 +6,12 @@ import { DashboardLayout } from '../components/layout/DashboardLayout'
 import { DashboardOverview } from '../features/dashboard/pages/DashboardOverview'
 import { ProfilePage } from '../features/dashboard/pages/ProfilePage'
 import { TicketsPage } from '../features/tickets/pages/TicketsPage'
+import { AdminOverviewPage } from '../features/admin-dashboard/pages/AdminOverviewPage'
+import { AdminTicketsPage } from '../features/admin-dashboard/pages/AdminTicketsPage'
+import { AdminResourcesPage } from '../features/admin-dashboard/pages/AdminResourcesPage'
+import { AdminUsersPage } from '../features/admin-dashboard/pages/AdminUsersPage'
+import { AdminReportsPage } from '../features/admin-dashboard/pages/AdminReportsPage'
+import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from './navigation/dashboardNavItems'
 import { useAuth } from '../features/auth/AuthContext'
 
 const AuthLoading = () => (
@@ -29,6 +35,32 @@ const RequireAuth = ({ children }) => {
     return children
 }
 
+// Reuse one dashboard shell with user-specific navigation settings.
+const UserDashboardRoute = ({ children }) => (
+    <RequireAuth>
+        <DashboardLayout
+            navItems={USER_NAV_ITEMS}
+            profilePath="/dashboard/profile"
+            brandLabel="Smart Campus"
+        >
+            {children}
+        </DashboardLayout>
+    </RequireAuth>
+)
+
+// Reuse the same shell with admin navigation and branding.
+const AdminDashboardRoute = ({ children }) => (
+    <RequireAuth>
+        <DashboardLayout
+            navItems={ADMIN_NAV_ITEMS}
+            profilePath="/admin/profile"
+            brandLabel="Campus Admin"
+        >
+            {children}
+        </DashboardLayout>
+    </RequireAuth>
+)
+
 export function AppRoutes() {
     return (
         <Routes>
@@ -39,36 +71,65 @@ export function AppRoutes() {
 
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={
-                <RequireAuth>
-                    <DashboardLayout>
-                        <DashboardOverview />
-                    </DashboardLayout>
-                </RequireAuth>
+                <UserDashboardRoute>
+                    <DashboardOverview />
+                </UserDashboardRoute>
             } />
 
             {/* Account profile section */}
             <Route path="/dashboard/profile" element={
-                <RequireAuth>
-                    <DashboardLayout>
-                        <ProfilePage />
-                    </DashboardLayout>
-                </RequireAuth>
+                <UserDashboardRoute>
+                    <ProfilePage />
+                </UserDashboardRoute>
             } />
 
             <Route path="/dashboard/tickets" element={
-                <RequireAuth>
-                    <DashboardLayout>
-                        <TicketsPage />
-                    </DashboardLayout>
-                </RequireAuth>
+                <UserDashboardRoute>
+                    <TicketsPage />
+                </UserDashboardRoute>
             } />
 
             <Route path="/dashboard/tickets/new" element={
-                <RequireAuth>
-                    <DashboardLayout>
-                        <TicketsPage />
-                    </DashboardLayout>
-                </RequireAuth>
+                <UserDashboardRoute>
+                    <TicketsPage />
+                </UserDashboardRoute>
+            } />
+
+            {/* Admin dashboard routes (UI scaffolding) */}
+            <Route path="/admin" element={
+                <AdminDashboardRoute>
+                    <AdminOverviewPage />
+                </AdminDashboardRoute>
+            } />
+
+            <Route path="/admin/profile" element={
+                <AdminDashboardRoute>
+                    <ProfilePage />
+                </AdminDashboardRoute>
+            } />
+
+            <Route path="/admin/tickets" element={
+                <AdminDashboardRoute>
+                    <AdminTicketsPage />
+                </AdminDashboardRoute>
+            } />
+
+            <Route path="/admin/resources" element={
+                <AdminDashboardRoute>
+                    <AdminResourcesPage />
+                </AdminDashboardRoute>
+            } />
+
+            <Route path="/admin/users" element={
+                <AdminDashboardRoute>
+                    <AdminUsersPage />
+                </AdminDashboardRoute>
+            } />
+
+            <Route path="/admin/reports" element={
+                <AdminDashboardRoute>
+                    <AdminReportsPage />
+                </AdminDashboardRoute>
             } />
         </Routes>
     )
