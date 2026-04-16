@@ -17,17 +17,22 @@ export const LoginPage = () => {
         email: '',
         password: ''
     });
-    const { status, refreshUser } = useAuth();
+    const { status, user, refreshUser } = useAuth();
     const navigate = useNavigate();
     // Prevent automatic dashboard jump 
     // unless Google flow started from this page.
     const hasStartedLoginRef = useRef(false);
 
+    // Keep a single login UX while routing 
+    // users by server-assigned role.
+    const resolveDashboardPath = (role) =>
+        String(role || '').toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+
     useEffect(() => {
         if (status === 'authenticated' && hasStartedLoginRef.current) {
-            navigate('/dashboard', { replace: true });
+            navigate(resolveDashboardPath(user?.role), { replace: true });
         }
-    }, [status, navigate]);
+    }, [status, user, navigate]);
 
     useEffect(() => {
         setFieldErrors(validateLoginForm(formData));
@@ -72,10 +77,12 @@ export const LoginPage = () => {
 
         try {
             // Local email/password login; backend sets auth_token cookie.
-            await authService.login(formData);
+            const response = await authService.login(formData);
+            // Use login response role for immediate redirect without waiting for another render.
+            const role = response?.user?.role;
             // Refresh context from /auth/me so route guards and UI update immediately.
             await refreshUser();
-            navigate('/dashboard', { replace: true });
+            navigate(resolveDashboardPath(role), { replace: true });
         } catch (err) {
             const message = err?.response?.data?.message || 'Login failed. Please try again.';
             setLoginError(message);

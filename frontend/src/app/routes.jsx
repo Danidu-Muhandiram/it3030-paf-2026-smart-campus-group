@@ -35,9 +35,44 @@ const RequireAuth = ({ children }) => {
     return children
 }
 
+const resolveDefaultDashboardPath = (role) =>
+    String(role || '').toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard'
+
+const RequireAdmin = ({ children }) => {
+    const { status, initialized, user } = useAuth()
+
+    if (!initialized) {
+        return <AuthLoading />
+    }
+
+    if (status !== 'authenticated') {
+        return <Navigate to="/login" replace />
+    }
+
+    // Block non-admin users from entering admin URLs.
+    if (String(user?.role || '').toUpperCase() !== 'ADMIN') {
+        return <Navigate to="/dashboard" replace />
+    }
+
+    return children
+}
+
 // Reuse one dashboard shell with user-specific navigation settings.
 const UserDashboardRoute = ({ children }) => (
     <RequireAuth>
+        <UserDashboardGate>{children}</UserDashboardGate>
+    </RequireAuth>
+)
+
+const UserDashboardGate = ({ children }) => {
+    const { user } = useAuth()
+
+    // Keep admin users inside admin shell even if they manually open /dashboard.
+    if (String(user?.role || '').toUpperCase() === 'ADMIN') {
+        return <Navigate to={resolveDefaultDashboardPath(user?.role)} replace />
+    }
+
+    return (
         <DashboardLayout
             navItems={USER_NAV_ITEMS}
             profilePath="/dashboard/profile"
@@ -45,12 +80,12 @@ const UserDashboardRoute = ({ children }) => (
         >
             {children}
         </DashboardLayout>
-    </RequireAuth>
-)
+    )
+}
 
 // Reuse the same shell with admin navigation and branding.
 const AdminDashboardRoute = ({ children }) => (
-    <RequireAuth>
+    <RequireAdmin>
         <DashboardLayout
             navItems={ADMIN_NAV_ITEMS}
             profilePath="/admin/profile"
@@ -58,7 +93,7 @@ const AdminDashboardRoute = ({ children }) => (
         >
             {children}
         </DashboardLayout>
-    </RequireAuth>
+    </RequireAdmin>
 )
 
 export function AppRoutes() {
