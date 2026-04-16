@@ -120,8 +120,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // Use HttpOnly cookie so token is not exposed to frontend JS.
         response.addHeader(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString());
 
+        // Route users to the matching dashboard immediately after OAuth login.
+        String role = savedUser.getRole() != null ? savedUser.getRole().getName() : "USER";
+        String dashboardPath = "ADMIN".equalsIgnoreCase(role) ? "/admin" : "/dashboard";
+
         String redirectUrl = UriComponentsBuilder
-            .fromUriString(frontendUrl + "/dashboard")
+            .fromUriString(frontendUrl + dashboardPath)
                 .build()
                 .toUriString();
 
