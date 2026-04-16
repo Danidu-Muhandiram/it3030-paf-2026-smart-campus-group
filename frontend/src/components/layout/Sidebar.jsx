@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard,
-    CalendarCheck,
-    Ticket,
-    Wrench,
     Settings,
     LogOut,
     Building2,
@@ -12,8 +8,18 @@ import {
     ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../features/auth/AuthContext';
+import { USER_NAV_ITEMS } from '../../app/navigation/dashboardNavItems';
 
-export const Sidebar = ({ isCollapsed, toggleSidebar, isMobileOpen, onMobileClose }) => {
+export const Sidebar = ({
+    isCollapsed,
+    toggleSidebar,
+    isMobileOpen,
+    onMobileClose,
+    // Defaults keep existing user dashboard behavior when props are omitted.
+    navItems = USER_NAV_ITEMS,
+    profilePath = '/dashboard/profile',
+    brandLabel = 'Smart Campus'
+}) => {
     const { logout } = useAuth();
     const navigate = useNavigate();
     const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -35,13 +41,6 @@ export const Sidebar = ({ isCollapsed, toggleSidebar, isMobileOpen, onMobileClos
     const handleNavClick = () => {
         onMobileClose?.();
     };
-    // Navigation items based on requirements
-    const navItems = [
-        { path: '/dashboard', icon: <LayoutDashboard size={20} />, label: 'Dashboard' },
-        { path: '/dashboard/facilities', icon: <Building2 size={20} />, label: 'Facilities Catalogue' },
-        { path: '/dashboard/bookings', icon: <CalendarCheck size={20} />, label: 'My Bookings' },
-        { path: '/dashboard/tickets', icon: <Ticket size={20} />, label: 'Maintenance Tickets' },
-    ];
 
     return (
         <>
@@ -76,13 +75,16 @@ export const Sidebar = ({ isCollapsed, toggleSidebar, isMobileOpen, onMobileClos
                     <Building2 className="w-5 h-5 text-white" />
                 </div>
                 <span className={`ml-3 font-bold text-lg whitespace-nowrap overflow-hidden transition-all ${isCollapsed ? 'md:hidden' : ''}`}>
-                    Smart Campus
+                    {brandLabel}
                 </span>
             </div>
 
             {/* Navigation Links */}
             <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-2">
-                {navItems.map((item) => (
+                {navItems.map((item) => {
+                    // Icon is passed as a component in nav config for flexible menus.
+                    const Icon = item.icon;
+                    return (
                     <NavLink
                         key={item.path}
                         to={item.path}
@@ -96,12 +98,13 @@ export const Sidebar = ({ isCollapsed, toggleSidebar, isMobileOpen, onMobileClos
                         `}
                         title={isCollapsed ? item.label : ''}
                     >
-                        <span className="shrink-0">{item.icon}</span>
+                        <span className="shrink-0"><Icon size={20} /></span>
                         <span className={`ml-3 whitespace-nowrap overflow-hidden ${isCollapsed ? 'md:hidden' : ''}`}>
                             {item.label}
                         </span>
                     </NavLink>
-                ))}
+                    );
+                })}
             </nav>
 
             {/* Bottom Section (Settings/Logout) */}
@@ -111,7 +114,7 @@ export const Sidebar = ({ isCollapsed, toggleSidebar, isMobileOpen, onMobileClos
                     title={isCollapsed ? 'Settings' : ''}
                     onClick={() => {
                         onMobileClose?.();
-                        navigate('/dashboard/profile');
+                        navigate(profilePath);
                     }}
                 >
                     <Settings size={20} className="shrink-0" />

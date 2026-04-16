@@ -2,7 +2,13 @@ import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopNav } from './TopNav';
 
-export const DashboardLayout = ({ children }) => {
+export const DashboardLayout = ({
+    children,
+    // Route wrappers provide role-specific sidebar settings.
+    navItems,
+    profilePath,
+    brandLabel,
+}) => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
@@ -26,6 +32,9 @@ export const DashboardLayout = ({ children }) => {
                 toggleSidebar={toggleDesktopSidebar}
                 isMobileOpen={isMobileSidebarOpen}
                 onMobileClose={closeMobileSidebar}
+                navItems={navItems}
+                profilePath={profilePath}
+                brandLabel={brandLabel}
             />
 
             {/* Main Content Area */}
