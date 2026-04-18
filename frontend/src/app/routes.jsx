@@ -11,6 +11,9 @@ import { AdminTicketsPage } from '../features/admin-dashboard/pages/AdminTickets
 import { AdminResourcesPage } from '../features/admin-dashboard/pages/AdminResourcesPage'
 import { AdminUsersPage } from '../features/admin-dashboard/pages/AdminUsersPage'
 import { AdminReportsPage } from '../features/admin-dashboard/pages/AdminReportsPage'
+import { AdminBookingsPage } from '../features/booking/pages/AdminBookingPage'
+import { BookingRequestPage } from '../features/booking/pages/BookingRequestPage'
+import { MyBookingPage } from '../features/booking/pages/MyBookingPage'
 import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from './navigation/dashboardNavItems'
 import { useAuth } from '../features/auth/AuthContext'
 
@@ -130,6 +133,24 @@ export function AppRoutes() {
                 </UserDashboardRoute>
             } />
 
+            <Route path="/dashboard/bookings" element={
+                <UserDashboardRoute>
+                    <MyBookingPage />
+                </UserDashboardRoute>
+            } />
+
+            <Route path="/dashboard/bookings/new" element={
+                <UserDashboardRoute>
+                    <BookingRequestPage />
+                </UserDashboardRoute>
+            } />
+
+            <Route path="/dashboard/bookings/request" element={
+                <UserDashboardRoute>
+                    <Navigate to="/dashboard/bookings/new" replace />
+                </UserDashboardRoute>
+            } />
+
             {/* Admin dashboard routes (UI scaffolding) */}
             <Route path="/admin" element={
                 <AdminDashboardRoute>
@@ -146,6 +167,12 @@ export function AppRoutes() {
             <Route path="/admin/tickets" element={
                 <AdminDashboardRoute>
                     <AdminTicketsPage />
+                </AdminDashboardRoute>
+            } />
+
+            <Route path="/admin/bookings" element={
+                <AdminDashboardRoute>
+                    <AdminBookingsPage />
                 </AdminDashboardRoute>
             } />
 
