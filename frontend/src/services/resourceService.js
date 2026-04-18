@@ -1,5 +1,15 @@
 import axiosInstance from './axios';
 
+// ─── Image Upload ─────────────────────────────────────────────────────────────
+
+export const uploadImage = (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return axiosInstance
+        .post('/uploads/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        .then((r) => r.data.data.url); // returns "/uploads/filename.ext"
+};
+
 // ─── Assets ──────────────────────────────────────────────────────────────────
 
 export const getAllAssets = () =>
