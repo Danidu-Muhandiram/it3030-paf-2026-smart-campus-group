@@ -15,5 +15,6 @@ public class AssetResponse {
     private String type;
     private String status;
     private Integer capacity;
+    private String imageUrl;
     private LocationResponse location;
 }

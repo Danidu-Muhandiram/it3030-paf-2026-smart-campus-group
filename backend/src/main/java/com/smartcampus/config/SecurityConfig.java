@@ -58,7 +58,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/health/**").permitAll()
                         .requestMatchers("/api/auth/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
-                        .requestMatchers("/api/assets/**", "/api/locations/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/api/assets/**", "/api/locations/**", "/api/uploads/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2

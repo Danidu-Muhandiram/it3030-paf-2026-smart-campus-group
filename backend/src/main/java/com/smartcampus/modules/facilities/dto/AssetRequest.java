@@ -25,4 +25,7 @@ public class AssetRequest {
 
     @NotNull(message = "Location is required")
     private Long locationId;
+
+    /** Optional — set after uploading via POST /api/uploads/image */
+    private String imageUrl;
 }

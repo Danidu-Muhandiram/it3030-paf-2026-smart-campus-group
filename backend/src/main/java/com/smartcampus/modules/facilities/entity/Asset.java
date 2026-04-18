@@ -30,6 +30,9 @@ public class Asset {
     @Column
     private Integer capacity;
 
+    @Column(name = "image_url", length = 255)
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
     private Location location;
