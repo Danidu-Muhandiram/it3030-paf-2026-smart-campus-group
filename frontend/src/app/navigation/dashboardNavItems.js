@@ -11,6 +11,7 @@ export const USER_NAV_ITEMS = [
 // Navigation used by the admin dashboard
 export const ADMIN_NAV_ITEMS = [
     { path: '/admin', icon: LayoutDashboard, label: 'Admin Dashboard' },
+    { path: '/admin/bookings', icon: CalendarCheck, label: 'Booking Management' },
     { path: '/admin/tickets', icon: Ticket, label: 'Ticket Management' },
     { path: '/admin/resources', icon: Building2, label: 'Resource Management' },
     { path: '/admin/users', icon: Users, label: 'User Management' },
