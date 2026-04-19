@@ -14,7 +14,7 @@ const STATUSES = [
 ];
 
 const EMPTY_ASSET = {
-    name: '', typeId: '', status: 'ACTIVE', capacity: '', locationId: '', imageUrl: '',
+    name: '', typeId: '', status: 'ACTIVE', capacity: '', locationId: '', imageUrl: '', description: '',
 };
 
 /**
@@ -40,6 +40,7 @@ const AssetModal = ({ asset, locations, types, onSave, onClose, onTypesChange })
                   capacity: asset.capacity ?? '',
                   locationId: asset.location?.id ?? '',
                   imageUrl: asset.imageUrl ?? '',
+                  description: asset.description ?? '',
               }
             : EMPTY_ASSET
     );
@@ -236,7 +237,18 @@ const AssetModal = ({ asset, locations, types, onSave, onClose, onTypesChange })
                         />
                     </InputField>
 
-                    {/* Image upload */}
+                    {/* Description */}
+                    <InputField label="Description" error={errors.description}>
+                        <textarea
+                            value={form.description}
+                            onChange={setField('description')}
+                            placeholder="Brief description of this resource (optional)"
+                            rows={3}
+                            maxLength={2000}
+                            className={`w-full text-sm px-3 py-2 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary/20 ${errors.description ? 'border-red-400' : 'border-gray-200 hover:border-primary'}`}
+                        />
+                        <p className="text-right text-xs text-text-muted mt-0.5">{form.description.length}/2000</p>
+                    </InputField>
                     <div>
                         <label className="block text-sm font-medium text-text-main mb-1">
                             Resource Image{' '}

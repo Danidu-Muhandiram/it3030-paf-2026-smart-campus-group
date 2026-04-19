@@ -11,7 +11,7 @@ const StatusBadge = ({ status }) => (
             STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-700 border-gray-200'
         }`}
     >
-        {status?.replace('_', ' ')}
+        {status}
     </span>
 );
 
