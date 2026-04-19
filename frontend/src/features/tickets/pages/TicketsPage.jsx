@@ -37,6 +37,20 @@ const getStatusButtonClass = (status, isSelected) => {
 
 const formatDateTime = (value) => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
+const CATEGORY_OPTIONS = [
+    { value: 'HARDWARE', label: 'Hardware' },
+    { value: 'ELECTRICAL', label: 'Electrical' },
+    { value: 'PLUMBING', label: 'Plumbing' },
+    { value: 'NETWORK', label: 'Network' }
+]
+
+const RESOURCE_OPTIONS = [
+    { value: 'PROJECTOR_LAB_B202_21', label: 'Projector #21 - Lab B202', location: 'Lab B202' },
+    { value: 'AC_DISCUSSION_04', label: 'AC Unit - Discussion Room 04', location: 'Discussion Room 04' },
+    { value: 'WHITEBOARD_HALL_A', label: 'Smart Whiteboard - Hall A', location: 'Hall A' },
+    { value: 'NETWORK_SW_C3', label: 'Network Switch - Block C3', location: 'Block C3' }
+]
+
 export const TicketsPage = () => {
     const { user } = useAuth()
 
@@ -59,12 +73,15 @@ export const TicketsPage = () => {
     const [selectedTicketId, setSelectedTicketId] = useState('TCK-1002')
     const [commentInput, setCommentInput] = useState('')
     const [formError, setFormError] = useState('')
+    const [fileWarning, setFileWarning] = useState('')
 
     const [newTicket, setNewTicket] = useState({
         title: '',
+        category: 'HARDWARE',
+        resourceId: 'PROJECTOR_LAB_B202_21',
         description: '',
-        location: '',
-        priority: 'MEDIUM'
+        priority: 'MEDIUM',
+        preferredContact: ''
     })
     const [newFiles, setNewFiles] = useState([])
 
@@ -89,7 +106,12 @@ export const TicketsPage = () => {
 
     const handleFilesChange = (event) => {
         const files = Array.from(event.target.files || [])
-        setNewFiles(files)
+        if (files.length > 3) {
+            setFileWarning('Only the first 3 images were selected (max 3).')
+        } else {
+            setFileWarning('')
+        }
+        setNewFiles(files.slice(0, 3))
     }
 
     const handleCreateTicket = (event) => {
@@ -101,14 +123,20 @@ export const TicketsPage = () => {
             return
         }
 
+        const selectedResource = RESOURCE_OPTIONS.find((resource) => resource.value === newTicket.resourceId)
+
         // Generate temporary ID client-side for demo flow.
         const newId = `TCK-${Math.floor(1000 + Math.random() * 9000)}`
         const createdTicket = {
             id: newId,
             title: newTicket.title.trim(),
             description: newTicket.description.trim(),
-            location: newTicket.location.trim(),
+            location: selectedResource?.location || '',
+            category: newTicket.category,
+            resourceId: newTicket.resourceId,
+            resourceLabel: selectedResource?.label || '',
             priority: newTicket.priority,
+            preferredContact: newTicket.preferredContact.trim(),
             status: 'OPEN',
             createdAt: new Date().toISOString(),
             attachments: newFiles.map((file) => file.name),
@@ -117,8 +145,16 @@ export const TicketsPage = () => {
 
         setTickets((prev) => [createdTicket, ...prev])
         setSelectedTicketId(createdTicket.id)
-        setNewTicket({ title: '', description: '', location: '', priority: 'MEDIUM' })
+        setNewTicket({
+            title: '',
+            category: 'HARDWARE',
+            resourceId: 'PROJECTOR_LAB_B202_21',
+            description: '',
+            priority: 'MEDIUM',
+            preferredContact: ''
+        })
         setNewFiles([])
+        setFileWarning('')
     }
 
     const handleAddComment = (event) => {
@@ -164,16 +200,67 @@ export const TicketsPage = () => {
                         <h2 className="text-base font-semibold text-text-main">Create Ticket</h2>
                     </div>
 
-                    <form className="space-y-3" onSubmit={handleCreateTicket}>
+                    <form className="space-y-4" onSubmit={handleCreateTicket}>
                         <div>
                             <label className="text-xs font-medium text-text-muted">Title</label>
                             <input
                                 name="title"
                                 value={newTicket.title}
                                 onChange={handleNewInputChange}
-                                placeholder="e.g. Projector power issue"
+                                placeholder="Projector not turning on"
                                 className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                             />
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-medium text-text-muted">Category</label>
+                            <select
+                                name="category"
+                                value={newTicket.category}
+                                onChange={handleNewInputChange}
+                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            >
+                                {CATEGORY_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="text-xs font-medium text-text-muted">Resource</label>
+                            <select
+                                name="resourceId"
+                                value={newTicket.resourceId}
+                                onChange={handleNewInputChange}
+                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            >
+                                {RESOURCE_OPTIONS.map((resource) => (
+                                    <option key={resource.value} value={resource.value}>
+                                        {resource.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <p className="text-xs font-medium text-text-muted">Priority</p>
+                            <div className="mt-1 flex flex-wrap items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                                {['LOW', 'MEDIUM', 'HIGH'].map((level) => (
+                                    <label key={level} className="inline-flex items-center gap-2 text-sm text-text-main cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="priority"
+                                            value={level}
+                                            checked={newTicket.priority === level}
+                                            onChange={handleNewInputChange}
+                                            className="h-4 w-4 accent-primary"
+                                        />
+                                        <span>{level.charAt(0) + level.slice(1).toLowerCase()}</span>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
 
                         <div>
@@ -188,35 +275,23 @@ export const TicketsPage = () => {
                             />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs font-medium text-text-muted">Location</label>
-                                <input
-                                    name="location"
-                                    value={newTicket.location}
-                                    onChange={handleNewInputChange}
-                                    placeholder="Lab / Room"
-                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-text-muted">Priority</label>
-                                <select
-                                    name="priority"
-                                    value={newTicket.priority}
-                                    onChange={handleNewInputChange}
-                                    className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                >
-                                    <option value="LOW">LOW</option>
-                                    <option value="MEDIUM">MEDIUM</option>
-                                    <option value="HIGH">HIGH</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label className="text-xs font-medium text-text-muted">Preferred Contact (Optional)</label>
+                            <input
+                                name="preferredContact"
+                                type="tel"
+                                value={newTicket.preferredContact}
+                                onChange={handleNewInputChange}
+                                placeholder="+94 xxx xxxx"
+                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            />
                         </div>
 
                         <div>
-                            <label className="text-xs font-medium text-text-muted">Upload Images</label>
+                            <div className="flex items-center justify-between gap-2">
+                                <label className="text-xs font-medium text-text-muted">Upload Images</label>
+                                <span className="text-[11px] text-text-light">Max 3</span>
+                            </div>
                             <input
                                 type="file"
                                 multiple
@@ -225,11 +300,18 @@ export const TicketsPage = () => {
                                 className="mt-1 block w-full text-xs text-text-muted file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-primary/10 file:text-primary"
                             />
                             {newFiles.length > 0 && (
-                                <p className="text-xs text-text-light mt-1">{newFiles.length} image(s) selected</p>
+                                <ul className="mt-2 flex flex-wrap gap-2">
+                                    {newFiles.map((file) => (
+                                        <li key={file.name} className="text-[11px] px-2 py-1 rounded border border-gray-200 bg-gray-50 text-text-muted">
+                                            {file.name}
+                                        </li>
+                                    ))}
+                                </ul>
                             )}
                         </div>
 
                         {formError && <p className="text-xs text-red-600">{formError}</p>}
+                        {fileWarning && <p className="text-xs text-amber-700">{fileWarning}</p>}
 
                         <button
                             type="submit"
@@ -259,7 +341,7 @@ export const TicketsPage = () => {
                             </div>
                         </div>
 
-                        <div className="mt-4 space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                        <div className="mt-4 space-y-3 max-h-95 overflow-y-auto pr-1">
                             {filteredTickets.length === 0 && (
                                 <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4">
                                     No tickets in this state yet.
