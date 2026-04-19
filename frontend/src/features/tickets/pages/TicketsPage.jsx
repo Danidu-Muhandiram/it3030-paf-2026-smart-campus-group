@@ -45,10 +45,10 @@ const CATEGORY_OPTIONS = [
 ]
 
 const RESOURCE_OPTIONS = [
-    { value: 'PROJECTOR_LAB_B202_21', label: 'Projector #21 - Lab B202', location: 'Lab B202' },
-    { value: 'AC_DISCUSSION_04', label: 'AC Unit - Discussion Room 04', location: 'Discussion Room 04' },
-    { value: 'WHITEBOARD_HALL_A', label: 'Smart Whiteboard - Hall A', location: 'Hall A' },
-    { value: 'NETWORK_SW_C3', label: 'Network Switch - Block C3', location: 'Block C3' }
+    { value: '3', label: 'B401 Computer Lab', location: 'Block B' },
+    { value: '1', label: 'A102 Smart Classroom', location: 'Block A' },
+    { value: '7', label: '4K Laser Projector - D512', location: 'Block D' },
+    { value: '9', label: 'Interactive Projector - F1102', location: 'Block F' }
 ]
 
 export const TicketsPage = () => {
@@ -78,7 +78,7 @@ export const TicketsPage = () => {
     const [newTicket, setNewTicket] = useState({
         title: '',
         category: 'HARDWARE',
-        resourceId: 'PROJECTOR_LAB_B202_21',
+        resourceId: '3',
         description: '',
         priority: 'MEDIUM',
         preferredContact: ''
@@ -114,7 +114,7 @@ export const TicketsPage = () => {
         setNewFiles(files.slice(0, 3))
     }
 
-    const handleCreateTicket = (event) => {
+    const handleCreateTicket = async (event) => {
         event.preventDefault()
         setFormError('')
 
@@ -123,38 +123,67 @@ export const TicketsPage = () => {
             return
         }
 
-        const selectedResource = RESOURCE_OPTIONS.find((resource) => resource.value === newTicket.resourceId)
+        const selectedResource = RESOURCE_OPTIONS.find((resource) => String(resource.value) === String(newTicket.resourceId))
 
-        // Generate temporary ID client-side for demo flow.
-        const newId = `TCK-${Math.floor(1000 + Math.random() * 9000)}`
-        const createdTicket = {
-            id: newId,
-            title: newTicket.title.trim(),
-            description: newTicket.description.trim(),
-            location: selectedResource?.location || '',
-            category: newTicket.category,
-            resourceId: newTicket.resourceId,
-            resourceLabel: selectedResource?.label || '',
-            priority: newTicket.priority,
-            preferredContact: newTicket.preferredContact.trim(),
-            status: 'OPEN',
-            createdAt: new Date().toISOString(),
-            attachments: newFiles.map((file) => file.name),
-            comments: []
-        }
+        const formData = new FormData()
+        formData.append('title', newTicket.title.trim())
+        formData.append('description', newTicket.description.trim())
+        formData.append('category', newTicket.category)
+        formData.append('priority', newTicket.priority)
+        formData.append('assetId', newTicket.resourceId) // Maps to Long assetId in backend
+        formData.append('contact', newTicket.preferredContact.trim())
 
-        setTickets((prev) => [createdTicket, ...prev])
-        setSelectedTicketId(createdTicket.id)
-        setNewTicket({
-            title: '',
-            category: 'HARDWARE',
-            resourceId: 'PROJECTOR_LAB_B202_21',
-            description: '',
-            priority: 'MEDIUM',
-            preferredContact: ''
+        newFiles.forEach((file) => {
+            formData.append('files', file)
         })
-        setNewFiles([])
-        setFileWarning('')
+
+        try {
+            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include' // Important for auth cookies!
+            })
+
+            const data = await response.json()
+            
+            if (!response.ok) {
+                setFormError(data.error || 'Failed to create ticket')
+                return
+            }
+
+            // Immediately create local ticket to show in UI
+            const createdTicket = {
+                id: `TCK-${data.ticketId}`, // Use the returned real Database ID
+                title: newTicket.title.trim(),
+                description: newTicket.description.trim(),
+                location: selectedResource?.location || '',
+                category: newTicket.category,
+                resourceId: newTicket.resourceId,
+                resourceLabel: selectedResource?.label || '',
+                priority: newTicket.priority,
+                preferredContact: newTicket.preferredContact.trim(),
+                status: 'OPEN',
+                createdAt: new Date().toISOString(),
+                attachments: newFiles.map((file) => file.name),
+                comments: []
+            }
+
+            setTickets((prev) => [createdTicket, ...prev])
+            setSelectedTicketId(createdTicket.id)
+            setNewTicket({
+                title: '',
+                category: 'HARDWARE',
+                resourceId: '3',
+                description: '',
+                priority: 'MEDIUM',
+                preferredContact: ''
+            })
+            setNewFiles([])
+            setFileWarning('')
+        } catch (error) {
+            console.error('Ticket creation error', error)
+            setFormError('Network error occurred while submitting ticket')
+        }
     }
 
     const handleAddComment = (event) => {
