@@ -18,9 +18,6 @@ export const getAllAssets = () =>
 export const getAssetById = (id) =>
     axiosInstance.get(`/assets/${id}`).then((r) => r.data.data);
 
-export const getDistinctAssetTypes = () =>
-    axiosInstance.get('/assets/types').then((r) => r.data.data);
-
 export const createAsset = (payload) =>
     axiosInstance.post('/assets', payload).then((r) => r.data.data);
 
@@ -43,3 +40,17 @@ export const updateLocation = (id, payload) =>
 
 export const deleteLocation = (id) =>
     axiosInstance.delete(`/locations/${id}`).then((r) => r.data);
+
+// ─── Resource Types ───────────────────────────────────────────────────────────
+
+export const getAllResourceTypes = () =>
+    axiosInstance.get('/resource-types').then((r) => r.data.data);
+
+export const createResourceType = (payload) =>
+    axiosInstance.post('/resource-types', payload).then((r) => r.data.data);
+
+export const updateResourceType = (id, payload) =>
+    axiosInstance.put(`/resource-types/${id}`, payload).then((r) => r.data.data);
+
+export const deleteResourceType = (id) =>
+    axiosInstance.delete(`/resource-types/${id}`).then((r) => r.data);

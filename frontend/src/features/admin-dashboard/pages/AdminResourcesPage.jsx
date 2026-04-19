@@ -3,12 +3,14 @@ import { Building2, ChevronDown, ImagePlus, MapPin, Pencil, Plus, Search, Trash2
 import {
     createAsset,
     createLocation,
+    createResourceType,
     deleteAsset,
     getAllAssets,
     getAllLocations,
-    getDistinctAssetTypes,
+    getAllResourceTypes,
     updateAsset,
     updateLocation,
+    updateResourceType,
     uploadImage,
 } from '../../../services/resourceService';
 
@@ -26,8 +28,9 @@ const STATUS_STYLES = {
 
 const PAGE_SIZE = 8;
 
-const EMPTY_ASSET = { name: '', type: '', status: 'ACTIVE', capacity: '', locationId: '', imageUrl: '' };
+const EMPTY_ASSET = { name: '', typeId: '', status: 'ACTIVE', capacity: '', locationId: '', imageUrl: '' };
 const EMPTY_LOCATION = { name: '', buildingName: '', floorNo: '' };
+const EMPTY_TYPE = { name: '' };
 
 // ─── Small reusable pieces ────────────────────────────────────────────────────
 
@@ -65,7 +68,7 @@ const LocationPickerField = ({ value, onChange, locations, onLocationsChange, er
 
     const selected = locations.find((l) => l.id === value);
 
-    const openNew = () => { setEditing('new'); setForm(EMPTY_LOCATION); setFormError(''); };
+    const openNew = () => { setShowDropdown(false); setEditing('new'); setForm(EMPTY_LOCATION); setFormError(''); };
     const openEdit = (loc, e) => {
         e.stopPropagation();
         setEditing(loc);
@@ -171,53 +174,127 @@ const LocationPickerField = ({ value, onChange, locations, onLocationsChange, er
     );
 };
 
-// ─── Type combo (select from existing + free type) ────────────────────────────
+// ─── Type picker with inline add/edit ────────────────────────────────────────
 
-const TypeComboField = ({ value, onChange, types, error }) => {
-    const [custom, setCustom] = useState(false);
+const TypePickerField = ({ value, onChange, types, onTypesChange, error }) => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [editing, setEditing] = useState(null);
+    const [form, setForm] = useState(EMPTY_TYPE);
+    const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState('');
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setShowDropdown(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const selected = types.find((t) => t.id === value);
+
+    const openNew = () => { setShowDropdown(false); setEditing('new'); setForm(EMPTY_TYPE); setFormError(''); };
+    const openEdit = (type, e) => {
+        e.stopPropagation();
+        setEditing(type);
+        setForm({ name: type.name });
+        setFormError('');
+    };
+
+    const handleSave = async () => {
+        if (!form.name.trim()) { setFormError('Name is required'); return; }
+        setSaving(true);
+        try {
+            const payload = { name: form.name.trim() };
+            let updated;
+            if (editing === 'new') {
+                updated = await createResourceType(payload);
+                onTypesChange([...types, updated]);
+                onChange(updated.id);
+            } else {
+                updated = await updateResourceType(editing.id, payload);
+                onTypesChange(types.map((t) => t.id === updated.id ? updated : t));
+                if (value === editing.id) onChange(updated.id);
+            }
+            setEditing(null);
+        } catch {
+            setFormError('Failed to save type');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
-        <div className="space-y-1.5">
-            {!custom ? (
-                <div className="flex gap-2">
-                    <select
-                        value={value}
-                        onChange={(e) => onChange(e.target.value)}
-                        className={`flex-1 text-sm px-3 py-2 border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 ${error ? 'border-red-400' : 'border-gray-200 hover:border-primary'}`}
+        <div ref={ref} className="relative">
+            <button
+                type="button"
+                onClick={() => setShowDropdown((v) => !v)}
+                className={`w-full flex items-center justify-between px-3 py-2 text-sm border rounded-lg bg-white text-left transition-colors ${error ? 'border-red-400' : 'border-gray-200 hover:border-primary'} focus:outline-none focus:ring-2 focus:ring-primary/20`}
+            >
+                <span className={selected ? 'text-text-main' : 'text-text-muted'}>
+                    {selected ? selected.name : 'Select type…'}
+                </span>
+                <ChevronDown className="w-4 h-4 text-text-muted shrink-0" />
+            </button>
+
+            {showDropdown && (
+                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                    <ul className="max-h-44 overflow-y-auto divide-y divide-gray-50">
+                        {types.length === 0 && (
+                            <li className="px-3 py-2 text-sm text-text-muted">No types yet</li>
+                        )}
+                        {types.map((type) => (
+                            <li
+                                key={type.id}
+                                onClick={() => { onChange(type.id); setShowDropdown(false); }}
+                                className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${value === type.id ? 'bg-blue-50 text-primary font-medium' : 'text-text-main'}`}
+                            >
+                                <span>{type.name}</span>
+                                <button type="button" onClick={(e) => openEdit(type, e)} className="ml-2 p-0.5 text-text-muted hover:text-primary">
+                                    <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                    <button
+                        type="button"
+                        onClick={openNew}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary hover:bg-blue-50 border-t border-gray-100"
                     >
-                        <option value="">Select type…</option>
-                        {types.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <button type="button" onClick={() => { setCustom(true); onChange(''); }}
-                        className="text-xs text-primary hover:underline shrink-0">
-                        + Custom
-                    </button>
-                </div>
-            ) : (
-                <div className="flex gap-2">
-                    <input
-                        value={value}
-                        onChange={(e) => onChange(e.target.value)}
-                        placeholder="Enter custom type…"
-                        className={`flex-1 text-sm px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 ${error ? 'border-red-400' : 'border-gray-200 hover:border-primary'}`}
-                    />
-                    <button type="button" onClick={() => { setCustom(false); onChange(''); }}
-                        className="text-xs text-text-muted hover:text-primary shrink-0">
-                        ← Select
+                        <Plus className="w-4 h-4" /> Add New Type
                     </button>
                 </div>
             )}
-            {error && <p className="text-xs text-red-500">{error}</p>}
+
+            {editing && (
+                <div className="mt-2 p-3 border border-primary/30 rounded-xl bg-blue-50 space-y-2">
+                    <p className="text-xs font-semibold text-primary">{editing === 'new' ? 'New Type' : 'Edit Type'}</p>
+                    <input placeholder="Type name *" value={form.name} onChange={(e) => setForm({ name: e.target.value })}
+                        className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                    {formError && <p className="text-xs text-red-500">{formError}</p>}
+                    <div className="flex gap-2">
+                        <button type="button" onClick={handleSave} disabled={saving}
+                            className="flex-1 text-xs font-semibold bg-primary hover:bg-primary-hover text-white py-1.5 rounded-lg transition-colors disabled:opacity-50">
+                            {saving ? 'Saving…' : 'Save'}
+                        </button>
+                        <button type="button" onClick={() => setEditing(null)}
+                            className="flex-1 text-xs font-semibold border border-gray-200 text-text-muted hover:border-primary hover:text-primary py-1.5 rounded-lg">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
+            {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
         </div>
     );
 };
 
 // ─── Asset Modal ──────────────────────────────────────────────────────────────
 
-const AssetModal = ({ asset, locations, types, onSave, onClose }) => {
+const AssetModal = ({ asset, locations, types, onSave, onClose, onTypesChange }) => {
     const isEdit = !!asset?.id;
     const [form, setForm] = useState(isEdit ? {
         name: asset.name,
-        type: asset.type,
+        typeId: asset.type?.id ?? '',
         status: asset.status,
         capacity: asset.capacity ?? '',
         locationId: asset.location?.id ?? '',
@@ -226,6 +303,7 @@ const AssetModal = ({ asset, locations, types, onSave, onClose }) => {
     const [errors, setErrors] = useState({});
     const [saving, setSaving] = useState(false);
     const [locs, setLocs] = useState(locations);
+    const [localTypes, setLocalTypes] = useState(types);
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(isEdit ? asset.imageUrl ?? '' : '');
     const [uploading, setUploading] = useState(false);
@@ -251,7 +329,7 @@ const AssetModal = ({ asset, locations, types, onSave, onClose }) => {
     const validate = () => {
         const e = {};
         if (!form.name.trim()) e.name = 'Name is required';
-        if (!form.type.trim()) e.type = 'Type is required';
+        if (!form.typeId) e.typeId = 'Type is required';
         if (!form.status) e.status = 'Status is required';
         if (!form.capacity || Number(form.capacity) <= 0) e.capacity = 'Capacity must be greater than 0';
         if (!form.locationId) e.locationId = 'Location is required';
@@ -271,8 +349,9 @@ const AssetModal = ({ asset, locations, types, onSave, onClose }) => {
                 finalImageUrl = await uploadImage(imageFile);
                 setUploading(false);
             }
-            const payload = { ...form, capacity: Number(form.capacity), locationId: Number(form.locationId), imageUrl: finalImageUrl };
+            const payload = { ...form, capacity: Number(form.capacity), locationId: Number(form.locationId), typeId: Number(form.typeId), imageUrl: finalImageUrl };
             const saved = isEdit ? await updateAsset(asset.id, payload) : await createAsset(payload);
+            onTypesChange(localTypes);
             onSave(saved, isEdit);
         } catch (err) {
             setUploading(false);
@@ -310,11 +389,17 @@ const AssetModal = ({ asset, locations, types, onSave, onClose }) => {
                     </InputField>
 
                     <InputField label="Type" required error={null}>
-                        <TypeComboField value={form.type} onChange={set('type')} types={types} error={errors.type} />
+                        <TypePickerField
+                            value={form.typeId}
+                            onChange={set('typeId')}
+                            types={localTypes}
+                            onTypesChange={setLocalTypes}
+                            error={errors.typeId}
+                        />
                     </InputField>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <InputField label="Capacity" required error={errors.capacity}>
+                        <InputField label="Capacity/Quantity" required error={errors.capacity}>
                             <input
                                 type="number"
                                 min="1"
@@ -440,7 +525,7 @@ export const AdminResourcesPage = () => {
     const [fetchError, setFetchError] = useState('');
 
     const [search, setSearch] = useState('');
-    const [filterType, setFilterType] = useState('');
+    const [filterTypeId, setFilterTypeId] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
     const [modal, setModal] = useState(null);
@@ -451,7 +536,7 @@ export const AdminResourcesPage = () => {
         setLoading(true);
         setFetchError('');
         try {
-            const [a, l, t] = await Promise.all([getAllAssets(), getAllLocations(), getDistinctAssetTypes()]);
+            const [a, l, t] = await Promise.all([getAllAssets(), getAllLocations(), getAllResourceTypes()]);
             setAssets(a);
             setLocations(l);
             setTypes(t);
@@ -467,13 +552,13 @@ export const AdminResourcesPage = () => {
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return assets.filter((a) => {
-            if (filterType && a.type !== filterType) return false;
+            if (filterTypeId && a.type?.id !== Number(filterTypeId)) return false;
             if (q && !a.name.toLowerCase().includes(q) &&
-                !a.type.toLowerCase().includes(q) &&
+                !(a.type?.name?.toLowerCase().includes(q)) &&
                 !(a.location?.name?.toLowerCase().includes(q))) return false;
             return true;
         });
-    }, [assets, search, filterType]);
+    }, [assets, search, filterTypeId]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -481,7 +566,6 @@ export const AdminResourcesPage = () => {
 
     const handleSave = (saved, isEdit) => {
         setAssets((prev) => isEdit ? prev.map((a) => a.id === saved.id ? saved : a) : [...prev, saved]);
-        if (!types.includes(saved.type)) setTypes((t) => [...t, saved.type].sort());
         setModal(null);
     };
 
@@ -528,12 +612,12 @@ export const AdminResourcesPage = () => {
                     />
                 </div>
                 <select
-                    value={filterType}
-                    onChange={handleFilterChange(setFilterType)}
+                    value={filterTypeId}
+                    onChange={handleFilterChange(setFilterTypeId)}
                     className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                     <option value="">All Types</option>
-                    {types.map((t) => <option key={t} value={t}>{t}</option>)}
+                    {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
             </div>
 
@@ -548,7 +632,7 @@ export const AdminResourcesPage = () => {
                     <span className="col-span-3">Name</span>
                     <span className="col-span-2">Type</span>
                     <span className="col-span-2">Location</span>
-                    <span className="col-span-1">Capacity</span>
+                    <span className="col-span-1">Capacity/Qty</span>
                     <span className="col-span-2">Status</span>
                     <span className="col-span-1 text-right">Actions</span>
                 </div>
@@ -563,8 +647,8 @@ export const AdminResourcesPage = () => {
                     ))
                 ) : paginated.length === 0 ? (
                     <div className="py-16 text-center text-sm text-text-muted">
-                        No resources found.{(search || filterType) && (
-                            <button onClick={() => { setSearch(''); setFilterType(''); }} className="text-primary underline ml-1">
+                        No resources found.{(search || filterTypeId) && (
+                            <button onClick={() => { setSearch(''); setFilterTypeId(''); }} className="text-primary underline ml-1">
                                 Clear filters
                             </button>
                         )}
@@ -577,7 +661,7 @@ export const AdminResourcesPage = () => {
                                 <Building2 size={15} className="text-primary shrink-0" />
                                 <span className="text-sm font-medium text-text-main truncate">{asset.name}</span>
                             </div>
-                            <span className="col-span-2 text-sm text-text-muted truncate">{asset.type}</span>
+                            <span className="col-span-2 text-sm text-text-muted truncate">{asset.type?.name ?? '—'}</span>
                             <div className="col-span-2 flex items-center gap-1 min-w-0">
                                 <MapPin size={13} className="text-text-muted shrink-0" />
                                 <span className="text-sm text-text-muted truncate">
@@ -637,6 +721,7 @@ export const AdminResourcesPage = () => {
                     types={types}
                     onSave={handleSave}
                     onClose={() => setModal(null)}
+                    onTypesChange={setTypes}
                 />
             )}
             {deleteTarget && (
