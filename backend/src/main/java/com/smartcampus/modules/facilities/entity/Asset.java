@@ -21,8 +21,9 @@ public class Asset {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 50)
-    private String type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "type_id")
+    private ResourceType type;
 
     @Column(length = 50)
     private String status;

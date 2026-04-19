@@ -13,14 +13,13 @@ public class AssetRequest {
     @Size(max = 100)
     private String name;
 
-    @NotBlank(message = "Asset type is required")
-    @Size(max = 50)
-    private String type;
+    @NotNull(message = "Asset type is required")
+    private Long typeId;
 
     @NotBlank(message = "Status is required")
     private String status;
 
-    @Positive(message = "Capacity must be a positive number")
+    @Positive(message = "Capacity must be greater than 0")
     private Integer capacity;
 
     @NotNull(message = "Location is required")

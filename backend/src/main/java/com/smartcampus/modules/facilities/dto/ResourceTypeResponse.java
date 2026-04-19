@@ -9,12 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AssetResponse {
+public class ResourceTypeResponse {
     private Long id;
     private String name;
-    private ResourceTypeResponse type;
-    private String status;
-    private Integer capacity;
-    private String imageUrl;
-    private LocationResponse location;
 }

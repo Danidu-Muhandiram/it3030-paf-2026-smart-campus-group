@@ -31,11 +31,6 @@ public class AssetController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Asset fetched", assetService.getById(id)));
     }
 
-    @GetMapping("/types")
-    public ResponseEntity<ApiResponse<List<String>>> getDistinctTypes() {
-        return ResponseEntity.ok(new ApiResponse<>(true, "Types fetched", assetService.getDistinctTypes()));
-    }
-
     @PostMapping
     public ResponseEntity<ApiResponse<AssetResponse>> create(@Valid @RequestBody AssetRequest request) {
         AssetResponse created = assetService.create(request);
