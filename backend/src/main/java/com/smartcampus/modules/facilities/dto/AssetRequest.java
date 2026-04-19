@@ -27,4 +27,8 @@ public class AssetRequest {
 
     /** Optional — set after uploading via POST /api/uploads/image */
     private String imageUrl;
+
+    /** Optional free-text description of the resource */
+    @Size(max = 2000)
+    private String description;
 }

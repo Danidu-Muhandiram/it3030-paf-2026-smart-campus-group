@@ -58,6 +58,7 @@ public class AssetService {
                 .status(request.getStatus())
                 .capacity(request.getCapacity())
                 .imageUrl(request.getImageUrl())
+                .description(request.getDescription())
                 .location(location)
                 .build();
         return toResponse(assetRepository.save(asset));
@@ -70,6 +71,7 @@ public class AssetService {
         asset.setStatus(request.getStatus());
         asset.setCapacity(request.getCapacity());
         asset.setLocation(resolveLocation(request.getLocationId()));
+        asset.setDescription(request.getDescription());
         if (request.getImageUrl() != null) {
             asset.setImageUrl(request.getImageUrl());
         }
@@ -105,6 +107,7 @@ public class AssetService {
                 .status(a.getStatus())
                 .capacity(a.getCapacity())
                 .imageUrl(a.getImageUrl())
+                .description(a.getDescription())
                 .location(a.getLocation() != null ? locationService.toResponse(a.getLocation()) : null)
                 .build();
     }
