@@ -4,6 +4,7 @@ import com.smartcampus.modules.auth.entity.User;
 import com.smartcampus.modules.auth.repository.UserRepository;
 import com.smartcampus.modules.facilities.entity.Asset;
 import com.smartcampus.modules.facilities.repository.AssetRepository;
+import com.smartcampus.modules.tickets.dto.TicketListItem;
 import com.smartcampus.modules.tickets.dto.TicketResponse;
 import com.smartcampus.modules.tickets.entity.Ticket;
 import com.smartcampus.modules.tickets.entity.TicketAttachment;
@@ -110,5 +111,41 @@ public class TicketService {
                         .map(TicketAttachment::getFilePath)
                         .collect(Collectors.toList()))
                 .build();
+    }
+
+    /**
+     * Returns all tickets submitted by the given user, newest first.
+     */
+    @Transactional(readOnly = true)
+    public List<TicketListItem> getMyTickets(String email) {
+        return ticketRepository.findByReportedByEmailOrderByCreatedAtDesc(email)
+                .stream()
+                .map(ticket -> {
+                    String locationName = (ticket.getAsset() != null
+                            && ticket.getAsset().getLocation() != null)
+                            ? ticket.getAsset().getLocation().getName()
+                            : "";
+                    String assetName = ticket.getAsset() != null ? ticket.getAsset().getName() : "";
+                    Long assetId = ticket.getAsset() != null ? ticket.getAsset().getId() : null;
+
+                    return TicketListItem.builder()
+                            .ticketId(ticket.getId())
+                            .title(ticket.getTitle())
+                            .description(ticket.getDescription())
+                            .priority(ticket.getPriority())
+                            .status(ticket.getStatus())
+                            .contact(ticket.getContact())
+                            .assetId(assetId)
+                            .assetName(assetName)
+                            .locationName(locationName)
+                            .reportedByName(
+                                    ticket.getReportedBy().getFirstName() + " " + ticket.getReportedBy().getLastName())
+                            .createdAt(ticket.getCreatedAt())
+                            .attachmentUrls(ticket.getAttachments().stream()
+                                    .map(TicketAttachment::getFilePath)
+                                    .collect(Collectors.toList()))
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

@@ -45,11 +45,54 @@ const formatDateTime = (value) => new Date(value).toLocaleString(undefined, { da
 export const TicketsPage = () => {
     const { user } = useAuth()
 
-    // Local mock state for UI prototyping; will replace with API-backed state when endpoint is ready.
+    // Local state for tickets - loaded from API on mount
     const [tickets, setTickets] = useState([])
+    const [ticketsLoading, setTicketsLoading] = useState(true)
+    const [ticketsError, setTicketsError] = useState('')
 
     const [resourceTypes, setResourceTypes] = useState([])
     const [allAssets, setAllAssets] = useState([])
+
+    // Map a raw API TicketListItem to the shape the UI expects
+    const mapApiTicket = (t) => ({
+        id: `TCK-${t.ticketId}`,
+        title: t.title,
+        description: t.description,
+        priority: t.priority,
+        status: t.status,
+        preferredContact: t.contact || '',
+        location: t.locationName || '',
+        resourceLabel: t.assetName || '',
+        resourceId: t.assetId,
+        createdAt: t.createdAt,
+        attachments: (t.attachmentUrls || []).map(url => url.substring(url.lastIndexOf('/') + 1)),
+        comments: []
+    })
+
+    const fetchMyTickets = async () => {
+        setTicketsLoading(true)
+        setTicketsError('')
+        try {
+            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+                credentials: 'include'
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                setTickets((data.data || []).map(mapApiTicket))
+            } else {
+                setTicketsError(data.message || 'Failed to load tickets')
+            }
+        } catch (err) {
+            console.error('Failed to fetch tickets', err)
+            setTicketsError('Network error — could not load tickets')
+        } finally {
+            setTicketsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchMyTickets()
+    }, [])
 
     useEffect(() => {
         const loadResources = async () => {
@@ -58,7 +101,7 @@ export const TicketsPage = () => {
                 const assets = await getAllAssets();
                 setResourceTypes(types || []);
                 setAllAssets(assets || []);
-                
+
                 if (types && types.length > 0) {
                     setNewTicket(prev => ({ ...prev, category: types[0].name }));
                 }
@@ -182,8 +225,10 @@ export const TicketsPage = () => {
                 comments: []
             }
 
-            setTickets((prev) => [createdTicket, ...prev])
-            setSelectedTicketId(createdTicket.id)
+            // Re-fetch from server so the full list stays in sync with the database
+            await fetchMyTickets()
+            // Auto-select the newly created ticket using its real DB id
+            setSelectedTicketId(`TCK-${ticketData.ticketId}`)
             setNewTicket({
                 title: '',
                 category: resourceTypes.length > 0 ? resourceTypes[0].name : '',
@@ -386,7 +431,23 @@ export const TicketsPage = () => {
                         </div>
 
                         <div className="mt-4 space-y-3 max-h-95 overflow-y-auto pr-1">
-                            {filteredTickets.length === 0 && (
+                            {ticketsLoading && (
+                                <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4 flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Loading your tickets…
+                                </div>
+                            )}
+
+                            {!ticketsLoading && ticketsError && (
+                                <div className="text-sm text-red-600 border border-dashed border-red-300 rounded-lg p-4">
+                                    {ticketsError}
+                                </div>
+                            )}
+
+                            {!ticketsLoading && !ticketsError && filteredTickets.length === 0 && (
                                 <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4">
                                     No tickets in this state yet.
                                 </div>
@@ -413,6 +474,7 @@ export const TicketsPage = () => {
                                 </button>
                             ))}
                         </div>
+
                     </div>
 
                     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
