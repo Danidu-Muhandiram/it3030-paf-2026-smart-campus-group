@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { MessageSquare, Paperclip, PlusCircle, X, Download } from 'lucide-react'
-import { useAuth } from '../../auth/AuthContext'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
 // workflow shown to end users.
 const WORKFLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085'
 
 // Shared status colors for badges across this page.
 const STATUS_STYLES = {
@@ -43,8 +43,6 @@ const formatDateTime = (value) => new Date(value).toLocaleString(undefined, { da
 // const RESOURCE_OPTIONS = [...]
 
 export const TicketsPage = () => {
-    const { user } = useAuth()
-
     // Local state for tickets - loaded from API on mount
     const [tickets, setTickets] = useState([])
     const [ticketsLoading, setTicketsLoading] = useState(true)
@@ -74,11 +72,23 @@ export const TicketsPage = () => {
         comments: []
     })
 
+    const mapApiComment = (c) => ({
+        id: `CMT-${c.commentId}`,
+        author: c.authorName || 'Unknown User',
+        message: c.comment || '',
+        createdAt: c.createdAt
+    })
+
+    const getTicketNumericId = (ticketId) => {
+        const value = Number(String(ticketId || '').replace('TCK-', ''))
+        return Number.isNaN(value) ? null : value
+    }
+
     const fetchMyTickets = async () => {
         setTicketsLoading(true)
         setTicketsError('')
         try {
-            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
                 credentials: 'include'
             })
             const data = await response.json()
@@ -124,6 +134,9 @@ export const TicketsPage = () => {
     const [selectedTicketId, setSelectedTicketId] = useState(null)
     const [lightboxUrl, setLightboxUrl] = useState(null)
     const [commentInput, setCommentInput] = useState('')
+    const [commentsLoading, setCommentsLoading] = useState(false)
+    const [commentSubmitting, setCommentSubmitting] = useState(false)
+    const [commentsError, setCommentsError] = useState('')
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
 
@@ -184,8 +197,6 @@ export const TicketsPage = () => {
             return
         }
 
-        const selectedResource = allAssets.find((resource) => String(resource.id) === String(newTicket.resourceId))
-
         const formData = new FormData()
         formData.append('title', newTicket.title.trim())
         formData.append('description', newTicket.description.trim())
@@ -199,7 +210,7 @@ export const TicketsPage = () => {
         })
 
         try {
-            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include' // Important for auth cookies!
@@ -212,24 +223,7 @@ export const TicketsPage = () => {
                 return
             }
 
-            const ticketData = data.data; // Server response data wrapper
-
-            // Immediately create local ticket to show in UI
-            const createdTicket = {
-                id: `TCK-${ticketData.ticketId}`, // Use the returned real Database ID
-                title: ticketData.title,
-                description: ticketData.description,
-                location: selectedResource?.location?.name || '',
-                category: newTicket.category,
-                resourceId: newTicket.resourceId,
-                resourceLabel: selectedResource?.name || '',
-                priority: ticketData.priority,
-                preferredContact: ticketData.contact || '',
-                status: ticketData.status || 'OPEN',
-                createdAt: ticketData.createdAt,
-                attachments: ticketData.attachmentUrls ? ticketData.attachmentUrls.map(url => url.substring(url.lastIndexOf('/') + 1)) : [],
-                comments: []
-            }
+            const ticketData = data.data
 
             // Re-fetch from server so the full list stays in sync with the database
             await fetchMyTickets()
@@ -251,30 +245,98 @@ export const TicketsPage = () => {
         }
     }
 
-    const handleAddComment = (event) => {
-        event.preventDefault()
-        if (!selectedTicket || !commentInput.trim()) {
+    const fetchTicketComments = async (ticketId) => {
+        const numericTicketId = getTicketNumericId(ticketId)
+        if (!numericTicketId) {
             return
         }
 
-        // Append comment locally to mimic threaded updates.
-        const newComment = {
-            id: `c-${Date.now()}`,
-            author: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
-            message: commentInput.trim(),
-            createdAt: new Date().toISOString()
+        setCommentsLoading(true)
+        setCommentsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments`, {
+                credentials: 'include'
+            })
+            const data = await response.json()
+
+            if (response.ok && data.success) {
+                const commentList = (data.data || []).map(mapApiComment)
+                setTickets((prev) => prev.map((ticket) => {
+                    if (ticket.id !== ticketId) {
+                        return ticket
+                    }
+                    return {
+                        ...ticket,
+                        comments: commentList
+                    }
+                }))
+            } else {
+                setCommentsError(data.message || 'Failed to load comments')
+            }
+        } catch (err) {
+            console.error('Failed to fetch comments', err)
+            setCommentsError('Network error - could not load comments')
+        } finally {
+            setCommentsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (!selectedTicketId) {
+            setCommentsError('')
+            return
+        }
+        fetchTicketComments(selectedTicketId)
+    }, [selectedTicketId])
+
+    const handleAddComment = async (event) => {
+        event.preventDefault()
+        if (!selectedTicket || !commentInput.trim() || commentSubmitting) {
+            return
         }
 
-        setTickets((prev) => prev.map((ticket) => {
-            if (ticket.id !== selectedTicket.id) {
-                return ticket
+        const numericTicketId = getTicketNumericId(selectedTicket.id)
+        if (!numericTicketId) {
+            setCommentsError('Invalid ticket ID')
+            return
+        }
+
+        setCommentSubmitting(true)
+        setCommentsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ comment: commentInput.trim() })
+            })
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                setCommentsError(data.message || 'Failed to post comment')
+                return
             }
-            return {
-                ...ticket,
-                comments: [...ticket.comments, newComment]
-            }
-        }))
-        setCommentInput('')
+
+            const savedComment = mapApiComment(data.data)
+
+            setTickets((prev) => prev.map((ticket) => {
+                if (ticket.id !== selectedTicket.id) {
+                    return ticket
+                }
+                return {
+                    ...ticket,
+                    comments: [...ticket.comments, savedComment]
+                }
+            }))
+            setCommentInput('')
+        } catch (error) {
+            console.error('Failed to post comment', error)
+            setCommentsError('Network error - could not post comment')
+        } finally {
+            setCommentSubmitting(false)
+        }
     }
 
     return (
@@ -551,7 +613,10 @@ export const TicketsPage = () => {
                                     </h4>
 
                                     <div className="mt-2 space-y-2 max-h-36 overflow-y-auto pr-1">
-                                        {selectedTicket.comments.length === 0 && (
+                                        {commentsLoading && (
+                                            <p className="text-xs text-text-light">Loading comments...</p>
+                                        )}
+                                        {!commentsLoading && selectedTicket.comments.length === 0 && (
                                             <p className="text-xs text-text-light">No comments yet.</p>
                                         )}
                                         {selectedTicket.comments.map((comment) => (
@@ -565,18 +630,22 @@ export const TicketsPage = () => {
                                         ))}
                                     </div>
 
+                                    {commentsError && <p className="text-xs text-red-600 mt-2">{commentsError}</p>}
+
                                     <form onSubmit={handleAddComment} className="mt-3 flex gap-2">
                                         <input
                                             value={commentInput}
                                             onChange={(event) => setCommentInput(event.target.value)}
                                             placeholder="Add a comment..."
+                                            disabled={commentSubmitting}
                                             className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         />
                                         <button
                                             type="submit"
+                                            disabled={commentSubmitting}
                                             className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover"
                                         >
-                                            Post
+                                            {commentSubmitting ? 'Posting...' : 'Post'}
                                         </button>
                                     </form>
                                 </div>
