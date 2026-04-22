@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { MessageSquare, Paperclip, PlusCircle, X, Download } from 'lucide-react'
+import { MessageSquare, Paperclip, PlusCircle, X, Download, MoreHorizontal } from 'lucide-react'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
 // workflow shown to end users.
@@ -73,10 +73,11 @@ export const TicketsPage = () => {
     })
 
     const mapApiComment = (c) => ({
-        id: `CMT-${c.commentId}`,
+        id: c.commentId,
         author: c.authorName || 'Unknown User',
         message: c.comment || '',
-        createdAt: c.createdAt
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt
     })
 
     const getTicketNumericId = (ticketId) => {
@@ -136,6 +137,10 @@ export const TicketsPage = () => {
     const [commentInput, setCommentInput] = useState('')
     const [commentsLoading, setCommentsLoading] = useState(false)
     const [commentSubmitting, setCommentSubmitting] = useState(false)
+    const [editingCommentId, setEditingCommentId] = useState(null)
+    const [editCommentInput, setEditCommentInput] = useState('')
+    const [commentActionId, setCommentActionId] = useState(null)
+    const [openCommentMenuId, setOpenCommentMenuId] = useState(null)
     const [commentsError, setCommentsError] = useState('')
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
@@ -284,8 +289,14 @@ export const TicketsPage = () => {
     useEffect(() => {
         if (!selectedTicketId) {
             setCommentsError('')
+            setEditingCommentId(null)
+            setEditCommentInput('')
+            setOpenCommentMenuId(null)
             return
         }
+        setEditingCommentId(null)
+        setEditCommentInput('')
+        setOpenCommentMenuId(null)
         fetchTicketComments(selectedTicketId)
     }, [selectedTicketId])
 
@@ -336,6 +347,124 @@ export const TicketsPage = () => {
             setCommentsError('Network error - could not post comment')
         } finally {
             setCommentSubmitting(false)
+        }
+    }
+
+    const handleStartEditComment = (comment) => {
+        setCommentsError('')
+        setOpenCommentMenuId(null)
+        setEditingCommentId(comment.id)
+        setEditCommentInput(comment.message)
+    }
+
+    const handleToggleCommentMenu = (commentId) => {
+        setOpenCommentMenuId((prev) => (prev === commentId ? null : commentId))
+    }
+
+    const handleCancelEditComment = () => {
+        setEditingCommentId(null)
+        setEditCommentInput('')
+    }
+
+    const handleSaveEditComment = async (event) => {
+        event.preventDefault()
+        if (!selectedTicket || !editingCommentId || !editCommentInput.trim()) {
+            return
+        }
+
+        const numericTicketId = getTicketNumericId(selectedTicket.id)
+        if (!numericTicketId) {
+            setCommentsError('Invalid ticket ID')
+            return
+        }
+
+        setCommentActionId(editingCommentId)
+        setCommentsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments/${editingCommentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ comment: editCommentInput.trim() })
+            })
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                setCommentsError(data.message || 'Failed to update comment')
+                return
+            }
+
+            const updatedComment = mapApiComment(data.data)
+            setTickets((prev) => prev.map((ticket) => {
+                if (ticket.id !== selectedTicket.id) {
+                    return ticket
+                }
+                return {
+                    ...ticket,
+                    comments: ticket.comments.map((comment) =>
+                        comment.id === updatedComment.id ? updatedComment : comment
+                    )
+                }
+            }))
+
+            setEditingCommentId(null)
+            setEditCommentInput('')
+            setOpenCommentMenuId(null)
+        } catch (error) {
+            console.error('Failed to update comment', error)
+            setCommentsError('Network error - could not update comment')
+        } finally {
+            setCommentActionId(null)
+        }
+    }
+
+    const handleDeleteComment = async (commentId) => {
+        if (!selectedTicket) {
+            return
+        }
+
+        const numericTicketId = getTicketNumericId(selectedTicket.id)
+        if (!numericTicketId) {
+            setCommentsError('Invalid ticket ID')
+            return
+        }
+
+        setCommentActionId(commentId)
+        setCommentsError('')
+        setOpenCommentMenuId(null)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments/${commentId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                setCommentsError(data.message || 'Failed to delete comment')
+                return
+            }
+
+            setTickets((prev) => prev.map((ticket) => {
+                if (ticket.id !== selectedTicket.id) {
+                    return ticket
+                }
+                return {
+                    ...ticket,
+                    comments: ticket.comments.filter((comment) => comment.id !== commentId)
+                }
+            }))
+
+            if (editingCommentId === commentId) {
+                setEditingCommentId(null)
+                setEditCommentInput('')
+            }
+        } catch (error) {
+            console.error('Failed to delete comment', error)
+            setCommentsError('Network error - could not delete comment')
+        } finally {
+            setCommentActionId(null)
         }
     }
 
@@ -481,7 +610,7 @@ export const TicketsPage = () => {
 
                 {/* Right: ticket list and selected ticket detail */}
                 <section className="xl:col-span-3 space-y-4">
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm min-h-96">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <h2 className="text-base font-semibold text-text-main">My Tickets</h2>
                             <div className="flex flex-wrap gap-2">
@@ -612,7 +741,7 @@ export const TicketsPage = () => {
                                         <MessageSquare size={15} /> Comments
                                     </h4>
 
-                                    <div className="mt-2 space-y-2 max-h-36 overflow-y-auto pr-1">
+                                    <div className="mt-2 space-y-2 min-h-40 max-h-56 overflow-y-auto pr-1">
                                         {commentsLoading && (
                                             <p className="text-xs text-text-light">Loading comments...</p>
                                         )}
@@ -623,9 +752,75 @@ export const TicketsPage = () => {
                                             <div key={comment.id} className="bg-white border border-gray-200 rounded-md p-2.5">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span className="text-xs font-semibold text-text-main">{comment.author}</span>
-                                                    <span className="text-[11px] text-text-light">{formatDateTime(comment.createdAt)}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[11px] text-text-light">
+                                                            {formatDateTime(comment.createdAt)}
+                                                            {comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' • edited' : ''}
+                                                        </span>
+                                                        {editingCommentId !== comment.id && (
+                                                            <div className="relative">
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Comment actions"
+                                                                    onClick={() => handleToggleCommentMenu(comment.id)}
+                                                                    disabled={commentActionId === comment.id}
+                                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-light hover:bg-gray-100 hover:text-text-main"
+                                                                >
+                                                                    <MoreHorizontal size={14} />
+                                                                </button>
+
+                                                                {openCommentMenuId === comment.id && (
+                                                                    <div className="absolute right-0 mt-1 w-28 rounded-md border border-gray-200 bg-white py-1 shadow-lg z-10">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleStartEditComment(comment)}
+                                                                            className="block w-full px-3 py-1.5 text-left text-xs text-text-main hover:bg-gray-50"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDeleteComment(comment.id)}
+                                                                            className="block w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm text-text-muted mt-1">{comment.message}</p>
+                                                {editingCommentId === comment.id ? (
+                                                    <form onSubmit={handleSaveEditComment} className="mt-2 space-y-2">
+                                                        <textarea
+                                                            rows={3}
+                                                            value={editCommentInput}
+                                                            onChange={(event) => setEditCommentInput(event.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                                            disabled={commentActionId === comment.id}
+                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="submit"
+                                                                disabled={commentActionId === comment.id || !editCommentInput.trim()}
+                                                                className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary-hover"
+                                                            >
+                                                                {commentActionId === comment.id ? 'Saving...' : 'Save'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCancelEditComment}
+                                                                disabled={commentActionId === comment.id}
+                                                                className="px-3 py-1.5 rounded-md border border-gray-200 text-xs text-text-muted hover:border-gray-300"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <p className="text-sm text-text-muted mt-1">{comment.message}</p>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

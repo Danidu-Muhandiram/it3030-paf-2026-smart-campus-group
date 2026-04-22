@@ -76,4 +76,31 @@ public class TicketController {
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
         }
     }
+
+    @PutMapping("/{ticketId}/comments/{commentId}")
+    public ResponseEntity<ApiResponse<TicketCommentResponse>> updateTicketComment(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long ticketId,
+            @PathVariable Long commentId,
+            @Valid @RequestBody TicketCommentRequest request) {
+        try {
+            TicketCommentResponse comment = ticketService.updateComment(email, ticketId, commentId, request.getComment());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Comment updated successfully", comment));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @DeleteMapping("/{ticketId}/comments/{commentId}")
+    public ResponseEntity<ApiResponse<Void>> deleteTicketComment(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long ticketId,
+            @PathVariable Long commentId) {
+        try {
+            ticketService.deleteComment(email, ticketId, commentId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Comment deleted successfully", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
 }

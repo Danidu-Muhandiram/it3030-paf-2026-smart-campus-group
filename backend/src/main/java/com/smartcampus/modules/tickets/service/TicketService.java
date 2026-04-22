@@ -155,10 +155,10 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketCommentResponse> getTicketComments(String email, Long ticketId) {
-                // only expose comments on tickets owned by the logged-in user.
+        // Only expose comments on tickets owned by the logged-in user.
         Ticket ticket = getAccessibleTicket(ticketId, email);
 
-                // Oldest to newest keeps the thread natural in the UI.
+        // Oldest to newest keeps the thread natural in the UI.
         return ticketCommentRepository.findByTicket_IdOrderByCreatedAtAsc(ticket.getId())
                 .stream()
                 .map(this::toTicketCommentResponse)
@@ -183,6 +183,23 @@ public class TicketService {
         return toTicketCommentResponse(savedComment);
     }
 
+        @Transactional
+        public TicketCommentResponse updateComment(String email, Long ticketId, Long commentId, String commentText) {
+                Ticket ticket = getAccessibleTicket(ticketId, email);
+                TicketComment comment = getOwnedComment(ticket.getId(), commentId, email);
+
+                comment.setCommentText(commentText.trim());
+                TicketComment updatedComment = ticketCommentRepository.save(comment);
+                return toTicketCommentResponse(updatedComment);
+        }
+
+        @Transactional
+        public void deleteComment(String email, Long ticketId, Long commentId) {
+                Ticket ticket = getAccessibleTicket(ticketId, email);
+                TicketComment comment = getOwnedComment(ticket.getId(), commentId, email);
+                ticketCommentRepository.delete(comment);
+        }
+
     private Ticket getAccessibleTicket(Long ticketId, String email) {
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
@@ -195,6 +212,18 @@ public class TicketService {
 
         return ticket;
     }
+
+        private TicketComment getOwnedComment(Long ticketId, Long commentId, String email) {
+                TicketComment comment = ticketCommentRepository.findByIdAndTicket_Id(commentId, ticketId)
+                                .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+                String commentOwnerEmail = comment.getCommentedBy() != null ? comment.getCommentedBy().getEmail() : null;
+                if (commentOwnerEmail == null || !commentOwnerEmail.equalsIgnoreCase(email)) {
+                        throw new RuntimeException("You can only edit or delete your own comments");
+                }
+
+                return comment;
+        }
 
     private TicketCommentResponse toTicketCommentResponse(TicketComment comment) {
         String authorName = "Unknown User";
