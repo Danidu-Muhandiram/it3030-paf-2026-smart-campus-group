@@ -4,9 +4,13 @@ import com.smartcampus.modules.auth.entity.User;
 import com.smartcampus.modules.auth.repository.UserRepository;
 import com.smartcampus.modules.facilities.entity.Asset;
 import com.smartcampus.modules.facilities.repository.AssetRepository;
+import com.smartcampus.modules.tickets.dto.TicketCommentResponse;
+import com.smartcampus.modules.tickets.dto.TicketListItem;
 import com.smartcampus.modules.tickets.dto.TicketResponse;
 import com.smartcampus.modules.tickets.entity.Ticket;
 import com.smartcampus.modules.tickets.entity.TicketAttachment;
+import com.smartcampus.modules.tickets.entity.TicketComment;
+import com.smartcampus.modules.tickets.repository.TicketCommentRepository;
 import com.smartcampus.modules.tickets.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +34,7 @@ import java.util.stream.Collectors;
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+        private final TicketCommentRepository ticketCommentRepository;
     private final AssetRepository assetRepository;
     private final UserRepository userRepository;
 
@@ -109,6 +114,140 @@ public class TicketService {
                 .attachmentUrls(savedTicket.getAttachments().stream()
                         .map(TicketAttachment::getFilePath)
                         .collect(Collectors.toList()))
+                .build();
+    }
+
+    /**
+     * Returns all tickets submitted by the given user, newest first.
+     */
+    @Transactional(readOnly = true)
+    public List<TicketListItem> getMyTickets(String email) {
+        return ticketRepository.findByReportedByEmailOrderByCreatedAtDesc(email)
+                .stream()
+                .map(ticket -> {
+                    String locationName = (ticket.getAsset() != null
+                            && ticket.getAsset().getLocation() != null)
+                            ? ticket.getAsset().getLocation().getName()
+                            : "";
+                    String assetName = ticket.getAsset() != null ? ticket.getAsset().getName() : "";
+                    Long assetId = ticket.getAsset() != null ? ticket.getAsset().getId() : null;
+
+                    return TicketListItem.builder()
+                            .ticketId(ticket.getId())
+                            .title(ticket.getTitle())
+                            .description(ticket.getDescription())
+                            .priority(ticket.getPriority())
+                            .status(ticket.getStatus())
+                            .contact(ticket.getContact())
+                            .assetId(assetId)
+                            .assetName(assetName)
+                            .locationName(locationName)
+                            .reportedByName(
+                                    ticket.getReportedBy().getFirstName() + " " + ticket.getReportedBy().getLastName())
+                            .createdAt(ticket.getCreatedAt())
+                            .attachmentUrls(ticket.getAttachments().stream()
+                                    .map(TicketAttachment::getFilePath)
+                                    .collect(Collectors.toList()))
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<TicketCommentResponse> getTicketComments(String email, Long ticketId) {
+        // Only expose comments on tickets owned by the logged-in user.
+        Ticket ticket = getAccessibleTicket(ticketId, email);
+
+        // Oldest to newest keeps the thread natural in the UI.
+        return ticketCommentRepository.findByTicket_IdOrderByCreatedAtAsc(ticket.getId())
+                .stream()
+                .map(this::toTicketCommentResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public TicketCommentResponse addComment(String email, Long ticketId, String commentText) {
+        User commentedBy = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Reuse same access rule for reads and writes.
+        Ticket ticket = getAccessibleTicket(ticketId, email);
+
+        TicketComment comment = TicketComment.builder()
+                .ticket(ticket)
+                .commentedBy(commentedBy)
+                .commentText(commentText.trim())
+                .build();
+
+        TicketComment savedComment = ticketCommentRepository.save(comment);
+        return toTicketCommentResponse(savedComment);
+    }
+
+        @Transactional
+        public TicketCommentResponse updateComment(String email, Long ticketId, Long commentId, String commentText) {
+                Ticket ticket = getAccessibleTicket(ticketId, email);
+                TicketComment comment = getOwnedComment(ticket.getId(), commentId, email);
+
+                comment.setCommentText(commentText.trim());
+                TicketComment updatedComment = ticketCommentRepository.save(comment);
+                return toTicketCommentResponse(updatedComment);
+        }
+
+        @Transactional
+        public void deleteComment(String email, Long ticketId, Long commentId) {
+                Ticket ticket = getAccessibleTicket(ticketId, email);
+                TicketComment comment = getOwnedComment(ticket.getId(), commentId, email);
+                ticketCommentRepository.delete(comment);
+        }
+
+    private Ticket getAccessibleTicket(Long ticketId, String email) {
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+                // For now, comments are scoped to the ticket reporter only.
+        String ownerEmail = ticket.getReportedBy() != null ? ticket.getReportedBy().getEmail() : null;
+        if (ownerEmail == null || !ownerEmail.equalsIgnoreCase(email)) {
+            throw new RuntimeException("You do not have access to this ticket");
+        }
+
+        return ticket;
+    }
+
+        private TicketComment getOwnedComment(Long ticketId, Long commentId, String email) {
+                TicketComment comment = ticketCommentRepository.findByIdAndTicket_Id(commentId, ticketId)
+                                .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+                String commentOwnerEmail = comment.getCommentedBy() != null ? comment.getCommentedBy().getEmail() : null;
+                if (commentOwnerEmail == null || !commentOwnerEmail.equalsIgnoreCase(email)) {
+                        throw new RuntimeException("You can only edit or delete your own comments");
+                }
+
+                return comment;
+        }
+
+    private TicketCommentResponse toTicketCommentResponse(TicketComment comment) {
+        String authorName = "Unknown User";
+        if (comment.getCommentedBy() != null) {
+            String firstName = comment.getCommentedBy().getFirstName() == null
+                    ? ""
+                    : comment.getCommentedBy().getFirstName();
+            String lastName = comment.getCommentedBy().getLastName() == null
+                    ? ""
+                    : comment.getCommentedBy().getLastName();
+            String fullName = (firstName + " " + lastName).trim();
+            // If profile names are missing, email is still better than a blank author.
+            authorName = fullName.isBlank()
+                    ? comment.getCommentedBy().getEmail()
+                    : fullName;
+        }
+
+        return TicketCommentResponse.builder()
+                .commentId(comment.getId())
+                .ticketId(comment.getTicket().getId())
+                .authorName(authorName)
+                .comment(comment.getCommentText())
+                .createdAt(comment.getCreatedAt())
+                .updatedAt(comment.getUpdatedAt())
                 .build();
     }
 }

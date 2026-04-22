@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { MessageSquare, Paperclip, PlusCircle } from 'lucide-react'
-import { useAuth } from '../../auth/AuthContext'
+import { MessageSquare, Paperclip, PlusCircle, X, Download, MoreHorizontal } from 'lucide-react'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
 // workflow shown to end users.
 const WORKFLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085'
 
 // Shared status colors for badges across this page.
 const STATUS_STYLES = {
@@ -43,13 +43,72 @@ const formatDateTime = (value) => new Date(value).toLocaleString(undefined, { da
 // const RESOURCE_OPTIONS = [...]
 
 export const TicketsPage = () => {
-    const { user } = useAuth()
-
-    // Local mock state for UI prototyping; will replace with API-backed state when endpoint is ready.
+    // Local state for tickets - loaded from API on mount
     const [tickets, setTickets] = useState([])
+    const [ticketsLoading, setTicketsLoading] = useState(true)
+    const [ticketsError, setTicketsError] = useState('')
 
     const [resourceTypes, setResourceTypes] = useState([])
     const [allAssets, setAllAssets] = useState([])
+
+    // Map a raw API TicketListItem to the shape the UI expects
+    const mapApiTicket = (t) => ({
+        id: `TCK-${t.ticketId}`,
+        title: t.title,
+        description: t.description,
+        priority: t.priority,
+        status: t.status,
+        preferredContact: t.contact || '',
+        location: t.locationName || '',
+        resourceLabel: t.assetName || '',
+        resourceId: t.assetId,
+        createdAt: t.createdAt,
+        // Store full URL objects so we can render images and offer download links
+        attachments: (t.attachmentUrls || []).map(url => ({
+            name: url.substring(url.lastIndexOf('/') + 1),
+            url: `http://localhost:8085${url}`,
+            isImage: /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(url)
+        })),
+        comments: []
+    })
+
+    const mapApiComment = (c) => ({
+        id: c.commentId,
+        author: c.authorName || 'Unknown User',
+        message: c.comment || '',
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt
+    })
+
+    const getTicketNumericId = (ticketId) => {
+        const value = Number(String(ticketId || '').replace('TCK-', ''))
+        return Number.isNaN(value) ? null : value
+    }
+
+    const fetchMyTickets = async () => {
+        setTicketsLoading(true)
+        setTicketsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
+                credentials: 'include'
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                setTickets((data.data || []).map(mapApiTicket))
+            } else {
+                setTicketsError(data.message || 'Failed to load tickets')
+            }
+        } catch (err) {
+            console.error('Failed to fetch tickets', err)
+            setTicketsError('Network error — could not load tickets')
+        } finally {
+            setTicketsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchMyTickets()
+    }, [])
 
     useEffect(() => {
         const loadResources = async () => {
@@ -58,7 +117,7 @@ export const TicketsPage = () => {
                 const assets = await getAllAssets();
                 setResourceTypes(types || []);
                 setAllAssets(assets || []);
-                
+
                 if (types && types.length > 0) {
                     setNewTicket(prev => ({ ...prev, category: types[0].name }));
                 }
@@ -74,7 +133,15 @@ export const TicketsPage = () => {
 
     const [filter, setFilter] = useState('ALL')
     const [selectedTicketId, setSelectedTicketId] = useState(null)
+    const [lightboxUrl, setLightboxUrl] = useState(null)
     const [commentInput, setCommentInput] = useState('')
+    const [commentsLoading, setCommentsLoading] = useState(false)
+    const [commentSubmitting, setCommentSubmitting] = useState(false)
+    const [editingCommentId, setEditingCommentId] = useState(null)
+    const [editCommentInput, setEditCommentInput] = useState('')
+    const [commentActionId, setCommentActionId] = useState(null)
+    const [openCommentMenuId, setOpenCommentMenuId] = useState(null)
+    const [commentsError, setCommentsError] = useState('')
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
 
@@ -135,8 +202,6 @@ export const TicketsPage = () => {
             return
         }
 
-        const selectedResource = allAssets.find((resource) => String(resource.id) === String(newTicket.resourceId))
-
         const formData = new FormData()
         formData.append('title', newTicket.title.trim())
         formData.append('description', newTicket.description.trim())
@@ -150,7 +215,7 @@ export const TicketsPage = () => {
         })
 
         try {
-            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include' // Important for auth cookies!
@@ -163,27 +228,12 @@ export const TicketsPage = () => {
                 return
             }
 
-            const ticketData = data.data; // Server response data wrapper
+            const ticketData = data.data
 
-            // Immediately create local ticket to show in UI
-            const createdTicket = {
-                id: `TCK-${ticketData.ticketId}`, // Use the returned real Database ID
-                title: ticketData.title,
-                description: ticketData.description,
-                location: selectedResource?.location?.name || '',
-                category: newTicket.category,
-                resourceId: newTicket.resourceId,
-                resourceLabel: selectedResource?.name || '',
-                priority: ticketData.priority,
-                preferredContact: ticketData.contact || '',
-                status: ticketData.status || 'OPEN',
-                createdAt: ticketData.createdAt,
-                attachments: ticketData.attachmentUrls ? ticketData.attachmentUrls.map(url => url.substring(url.lastIndexOf('/') + 1)) : [],
-                comments: []
-            }
-
-            setTickets((prev) => [createdTicket, ...prev])
-            setSelectedTicketId(createdTicket.id)
+            // Re-fetch from server so the full list stays in sync with the database
+            await fetchMyTickets()
+            // Auto-select the newly created ticket using its real DB id
+            setSelectedTicketId(`TCK-${ticketData.ticketId}`)
             setNewTicket({
                 title: '',
                 category: resourceTypes.length > 0 ? resourceTypes[0].name : '',
@@ -200,30 +250,222 @@ export const TicketsPage = () => {
         }
     }
 
-    const handleAddComment = (event) => {
-        event.preventDefault()
-        if (!selectedTicket || !commentInput.trim()) {
+    const fetchTicketComments = async (ticketId) => {
+        const numericTicketId = getTicketNumericId(ticketId)
+        if (!numericTicketId) {
             return
         }
 
-        // Append comment locally to mimic threaded updates.
-        const newComment = {
-            id: `c-${Date.now()}`,
-            author: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
-            message: commentInput.trim(),
-            createdAt: new Date().toISOString()
+        setCommentsLoading(true)
+        setCommentsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments`, {
+                credentials: 'include'
+            })
+            const data = await response.json()
+
+            if (response.ok && data.success) {
+                const commentList = (data.data || []).map(mapApiComment)
+                setTickets((prev) => prev.map((ticket) => {
+                    if (ticket.id !== ticketId) {
+                        return ticket
+                    }
+                    return {
+                        ...ticket,
+                        comments: commentList
+                    }
+                }))
+            } else {
+                setCommentsError(data.message || 'Failed to load comments')
+            }
+        } catch (err) {
+            console.error('Failed to fetch comments', err)
+            setCommentsError('Network error - could not load comments')
+        } finally {
+            setCommentsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (!selectedTicketId) {
+            setCommentsError('')
+            setEditingCommentId(null)
+            setEditCommentInput('')
+            setOpenCommentMenuId(null)
+            return
+        }
+        setEditingCommentId(null)
+        setEditCommentInput('')
+        setOpenCommentMenuId(null)
+        fetchTicketComments(selectedTicketId)
+    }, [selectedTicketId])
+
+    const handleAddComment = async (event) => {
+        event.preventDefault()
+        if (!selectedTicket || !commentInput.trim() || commentSubmitting) {
+            return
         }
 
-        setTickets((prev) => prev.map((ticket) => {
-            if (ticket.id !== selectedTicket.id) {
-                return ticket
+        const numericTicketId = getTicketNumericId(selectedTicket.id)
+        if (!numericTicketId) {
+            setCommentsError('Invalid ticket ID')
+            return
+        }
+
+        setCommentSubmitting(true)
+        setCommentsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ comment: commentInput.trim() })
+            })
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                setCommentsError(data.message || 'Failed to post comment')
+                return
             }
-            return {
-                ...ticket,
-                comments: [...ticket.comments, newComment]
+
+            const savedComment = mapApiComment(data.data)
+
+            setTickets((prev) => prev.map((ticket) => {
+                if (ticket.id !== selectedTicket.id) {
+                    return ticket
+                }
+                return {
+                    ...ticket,
+                    comments: [...ticket.comments, savedComment]
+                }
+            }))
+            setCommentInput('')
+        } catch (error) {
+            console.error('Failed to post comment', error)
+            setCommentsError('Network error - could not post comment')
+        } finally {
+            setCommentSubmitting(false)
+        }
+    }
+
+    const handleStartEditComment = (comment) => {
+        setCommentsError('')
+        setOpenCommentMenuId(null)
+        setEditingCommentId(comment.id)
+        setEditCommentInput(comment.message)
+    }
+
+    const handleToggleCommentMenu = (commentId) => {
+        setOpenCommentMenuId((prev) => (prev === commentId ? null : commentId))
+    }
+
+    const handleCancelEditComment = () => {
+        setEditingCommentId(null)
+        setEditCommentInput('')
+    }
+
+    const handleSaveEditComment = async (event) => {
+        event.preventDefault()
+        if (!selectedTicket || !editingCommentId || !editCommentInput.trim()) {
+            return
+        }
+
+        const numericTicketId = getTicketNumericId(selectedTicket.id)
+        if (!numericTicketId) {
+            setCommentsError('Invalid ticket ID')
+            return
+        }
+
+        setCommentActionId(editingCommentId)
+        setCommentsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments/${editingCommentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ comment: editCommentInput.trim() })
+            })
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                setCommentsError(data.message || 'Failed to update comment')
+                return
             }
-        }))
-        setCommentInput('')
+
+            const updatedComment = mapApiComment(data.data)
+            setTickets((prev) => prev.map((ticket) => {
+                if (ticket.id !== selectedTicket.id) {
+                    return ticket
+                }
+                return {
+                    ...ticket,
+                    comments: ticket.comments.map((comment) =>
+                        comment.id === updatedComment.id ? updatedComment : comment
+                    )
+                }
+            }))
+
+            setEditingCommentId(null)
+            setEditCommentInput('')
+            setOpenCommentMenuId(null)
+        } catch (error) {
+            console.error('Failed to update comment', error)
+            setCommentsError('Network error - could not update comment')
+        } finally {
+            setCommentActionId(null)
+        }
+    }
+
+    const handleDeleteComment = async (commentId) => {
+        if (!selectedTicket) {
+            return
+        }
+
+        const numericTicketId = getTicketNumericId(selectedTicket.id)
+        if (!numericTicketId) {
+            setCommentsError('Invalid ticket ID')
+            return
+        }
+
+        setCommentActionId(commentId)
+        setCommentsError('')
+        setOpenCommentMenuId(null)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments/${commentId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+            const data = await response.json()
+
+            if (!response.ok || !data.success) {
+                setCommentsError(data.message || 'Failed to delete comment')
+                return
+            }
+
+            setTickets((prev) => prev.map((ticket) => {
+                if (ticket.id !== selectedTicket.id) {
+                    return ticket
+                }
+                return {
+                    ...ticket,
+                    comments: ticket.comments.filter((comment) => comment.id !== commentId)
+                }
+            }))
+
+            if (editingCommentId === commentId) {
+                setEditingCommentId(null)
+                setEditCommentInput('')
+            }
+        } catch (error) {
+            console.error('Failed to delete comment', error)
+            setCommentsError('Network error - could not delete comment')
+        } finally {
+            setCommentActionId(null)
+        }
     }
 
     return (
@@ -368,7 +610,7 @@ export const TicketsPage = () => {
 
                 {/* Right: ticket list and selected ticket detail */}
                 <section className="xl:col-span-3 space-y-4">
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm min-h-96">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <h2 className="text-base font-semibold text-text-main">My Tickets</h2>
                             <div className="flex flex-wrap gap-2">
@@ -386,7 +628,23 @@ export const TicketsPage = () => {
                         </div>
 
                         <div className="mt-4 space-y-3 max-h-95 overflow-y-auto pr-1">
-                            {filteredTickets.length === 0 && (
+                            {ticketsLoading && (
+                                <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4 flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Loading your tickets…
+                                </div>
+                            )}
+
+                            {!ticketsLoading && ticketsError && (
+                                <div className="text-sm text-red-600 border border-dashed border-red-300 rounded-lg p-4">
+                                    {ticketsError}
+                                </div>
+                            )}
+
+                            {!ticketsLoading && !ticketsError && filteredTickets.length === 0 && (
                                 <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4">
                                     No tickets in this state yet.
                                 </div>
@@ -413,6 +671,7 @@ export const TicketsPage = () => {
                                 </button>
                             ))}
                         </div>
+
                     </div>
 
                     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -439,15 +698,41 @@ export const TicketsPage = () => {
                                         <Paperclip size={15} /> Attachments
                                     </h4>
                                     {selectedTicket.attachments.length === 0 ? (
-                                        <p className="text-xs text-text-light mt-1">No images uploaded.</p>
+                                        <p className="text-xs text-text-light mt-1">No files uploaded.</p>
                                     ) : (
-                                        <ul className="mt-2 flex flex-wrap gap-2 text-xs text-text-muted">
+                                        <div className="mt-2 flex flex-wrap gap-2">
                                             {selectedTicket.attachments.map((file) => (
-                                                <li key={file} className="px-2.5 py-1 rounded-md bg-white border border-gray-200">
-                                                    {file}
-                                                </li>
+                                                file.isImage ? (
+                                                    <button
+                                                        key={file.url}
+                                                        type="button"
+                                                        title={file.name}
+                                                        onClick={() => setLightboxUrl(file.url)}
+                                                        className="relative group w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:border-primary transition-colors shadow-sm"
+                                                    >
+                                                        <img
+                                                            src={file.url}
+                                                            alt={file.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                            <span className="text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity px-1 text-center">View</span>
+                                                        </div>
+                                                    </button>
+                                                ) : (
+                                                    <a
+                                                        key={file.url}
+                                                        href={file.url}
+                                                        download={file.name}
+                                                        title={file.name}
+                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-gray-200 hover:border-primary hover:text-primary text-xs text-text-muted transition-colors"
+                                                    >
+                                                        <Download size={12} />
+                                                        <span className="max-w-[120px] truncate">{file.name}</span>
+                                                    </a>
+                                                )
                                             ))}
-                                        </ul>
+                                        </div>
                                     )}
                                 </div>
 
@@ -456,33 +741,106 @@ export const TicketsPage = () => {
                                         <MessageSquare size={15} /> Comments
                                     </h4>
 
-                                    <div className="mt-2 space-y-2 max-h-36 overflow-y-auto pr-1">
-                                        {selectedTicket.comments.length === 0 && (
+                                    <div className="mt-2 space-y-2 min-h-40 max-h-56 overflow-y-auto pr-1">
+                                        {commentsLoading && (
+                                            <p className="text-xs text-text-light">Loading comments...</p>
+                                        )}
+                                        {!commentsLoading && selectedTicket.comments.length === 0 && (
                                             <p className="text-xs text-text-light">No comments yet.</p>
                                         )}
                                         {selectedTicket.comments.map((comment) => (
                                             <div key={comment.id} className="bg-white border border-gray-200 rounded-md p-2.5">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <span className="text-xs font-semibold text-text-main">{comment.author}</span>
-                                                    <span className="text-[11px] text-text-light">{formatDateTime(comment.createdAt)}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[11px] text-text-light">
+                                                            {formatDateTime(comment.createdAt)}
+                                                            {comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' • edited' : ''}
+                                                        </span>
+                                                        {editingCommentId !== comment.id && (
+                                                            <div className="relative">
+                                                                <button
+                                                                    type="button"
+                                                                    aria-label="Comment actions"
+                                                                    onClick={() => handleToggleCommentMenu(comment.id)}
+                                                                    disabled={commentActionId === comment.id}
+                                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-light hover:bg-gray-100 hover:text-text-main"
+                                                                >
+                                                                    <MoreHorizontal size={14} />
+                                                                </button>
+
+                                                                {openCommentMenuId === comment.id && (
+                                                                    <div className="absolute right-0 mt-1 w-28 rounded-md border border-gray-200 bg-white py-1 shadow-lg z-10">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleStartEditComment(comment)}
+                                                                            className="block w-full px-3 py-1.5 text-left text-xs text-text-main hover:bg-gray-50"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDeleteComment(comment.id)}
+                                                                            className="block w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50"
+                                                                        >
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <p className="text-sm text-text-muted mt-1">{comment.message}</p>
+                                                {editingCommentId === comment.id ? (
+                                                    <form onSubmit={handleSaveEditComment} className="mt-2 space-y-2">
+                                                        <textarea
+                                                            rows={3}
+                                                            value={editCommentInput}
+                                                            onChange={(event) => setEditCommentInput(event.target.value)}
+                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                                            disabled={commentActionId === comment.id}
+                                                        />
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                type="submit"
+                                                                disabled={commentActionId === comment.id || !editCommentInput.trim()}
+                                                                className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary-hover"
+                                                            >
+                                                                {commentActionId === comment.id ? 'Saving...' : 'Save'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleCancelEditComment}
+                                                                disabled={commentActionId === comment.id}
+                                                                className="px-3 py-1.5 rounded-md border border-gray-200 text-xs text-text-muted hover:border-gray-300"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <p className="text-sm text-text-muted mt-1">{comment.message}</p>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
+
+                                    {commentsError && <p className="text-xs text-red-600 mt-2">{commentsError}</p>}
 
                                     <form onSubmit={handleAddComment} className="mt-3 flex gap-2">
                                         <input
                                             value={commentInput}
                                             onChange={(event) => setCommentInput(event.target.value)}
                                             placeholder="Add a comment..."
+                                            disabled={commentSubmitting}
                                             className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         />
                                         <button
                                             type="submit"
+                                            disabled={commentSubmitting}
                                             className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover"
                                         >
-                                            Post
+                                            {commentSubmitting ? 'Posting...' : 'Post'}
                                         </button>
                                     </form>
                                 </div>
@@ -491,6 +849,32 @@ export const TicketsPage = () => {
                     </div>
                 </section>
             </div>
+
+            {/* Lightbox overlay */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setLightboxUrl(null)}
+                    onKeyDown={(e) => e.key === 'Escape' && setLightboxUrl(null)}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <button
+                        type="button"
+                        onClick={() => setLightboxUrl(null)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        aria-label="Close image viewer"
+                    >
+                        <X size={20} />
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="Attachment preview"
+                        className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
         </div>
     )
