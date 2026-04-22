@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { MessageSquare, Paperclip, PlusCircle } from 'lucide-react'
 import { useAuth } from '../../auth/AuthContext'
+import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
 // workflow shown to end users.
 const WORKFLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
@@ -37,48 +38,50 @@ const getStatusButtonClass = (status, isSelected) => {
 
 const formatDateTime = (value) => new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 
-const CATEGORY_OPTIONS = [
-    { value: 'HARDWARE', label: 'Hardware' },
-    { value: 'ELECTRICAL', label: 'Electrical' },
-    { value: 'PLUMBING', label: 'Plumbing' },
-    { value: 'NETWORK', label: 'Network' }
-]
-
-const RESOURCE_OPTIONS = [
-    { value: 'PROJECTOR_LAB_B202_21', label: 'Projector #21 - Lab B202', location: 'Lab B202' },
-    { value: 'AC_DISCUSSION_04', label: 'AC Unit - Discussion Room 04', location: 'Discussion Room 04' },
-    { value: 'WHITEBOARD_HALL_A', label: 'Smart Whiteboard - Hall A', location: 'Hall A' },
-    { value: 'NETWORK_SW_C3', label: 'Network Switch - Block C3', location: 'Block C3' }
-]
+// We will fetch these from the API dynamically now
+// const CATEGORY_OPTIONS = [...]
+// const RESOURCE_OPTIONS = [...]
 
 export const TicketsPage = () => {
     const { user } = useAuth()
 
     // Local mock state for UI prototyping; will replace with API-backed state when endpoint is ready.
-    const [tickets, setTickets] = useState([
-        {
-            id: 'TCK-1002',
-            title: 'AC leaking water',
-            description: 'Water drip near the AC unit in Discussion Room 04.',
-            location: 'Discussion Room 04',
-            priority: 'HIGH',
-            status: 'OPEN',
-            createdAt: '2026-04-12T05:15:00.000Z',
-            attachments: ['ac_leak.jpg', 'floor_spot.jpg'],
-            comments: []
-        }
-    ])
+    const [tickets, setTickets] = useState([])
+
+    const [resourceTypes, setResourceTypes] = useState([])
+    const [allAssets, setAllAssets] = useState([])
+
+    useEffect(() => {
+        const loadResources = async () => {
+            try {
+                const types = await getAllResourceTypes();
+                const assets = await getAllAssets();
+                setResourceTypes(types || []);
+                setAllAssets(assets || []);
+                
+                if (types && types.length > 0) {
+                    setNewTicket(prev => ({ ...prev, category: types[0].name }));
+                }
+                if (assets && assets.length > 0) {
+                    setNewTicket(prev => ({ ...prev, resourceId: assets[0].id }));
+                }
+            } catch (error) {
+                console.error("Failed to load resources for tickets", error);
+            }
+        };
+        loadResources();
+    }, []);
 
     const [filter, setFilter] = useState('ALL')
-    const [selectedTicketId, setSelectedTicketId] = useState('TCK-1002')
+    const [selectedTicketId, setSelectedTicketId] = useState(null)
     const [commentInput, setCommentInput] = useState('')
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
 
     const [newTicket, setNewTicket] = useState({
         title: '',
-        category: 'HARDWARE',
-        resourceId: 'PROJECTOR_LAB_B202_21',
+        category: '',
+        resourceId: '',
         description: '',
         priority: 'MEDIUM',
         preferredContact: ''
@@ -98,10 +101,19 @@ export const TicketsPage = () => {
 
     const handleNewInputChange = (event) => {
         const { name, value } = event.target
-        setNewTicket((prev) => ({
-            ...prev,
-            [name]: value
-        }))
+        setNewTicket((prev) => {
+            const updated = { ...prev, [name]: value };
+            // If category changes, try to auto-select the first asset in that category
+            if (name === 'category') {
+                const filtered = allAssets.filter(a => a.type?.name === value);
+                if (filtered.length > 0) {
+                    updated.resourceId = filtered[0].id;
+                } else {
+                    updated.resourceId = '';
+                }
+            }
+            return updated;
+        })
     }
 
     const handleFilesChange = (event) => {
@@ -114,7 +126,7 @@ export const TicketsPage = () => {
         setNewFiles(files.slice(0, 3))
     }
 
-    const handleCreateTicket = (event) => {
+    const handleCreateTicket = async (event) => {
         event.preventDefault()
         setFormError('')
 
@@ -123,38 +135,69 @@ export const TicketsPage = () => {
             return
         }
 
-        const selectedResource = RESOURCE_OPTIONS.find((resource) => resource.value === newTicket.resourceId)
+        const selectedResource = allAssets.find((resource) => String(resource.id) === String(newTicket.resourceId))
 
-        // Generate temporary ID client-side for demo flow.
-        const newId = `TCK-${Math.floor(1000 + Math.random() * 9000)}`
-        const createdTicket = {
-            id: newId,
-            title: newTicket.title.trim(),
-            description: newTicket.description.trim(),
-            location: selectedResource?.location || '',
-            category: newTicket.category,
-            resourceId: newTicket.resourceId,
-            resourceLabel: selectedResource?.label || '',
-            priority: newTicket.priority,
-            preferredContact: newTicket.preferredContact.trim(),
-            status: 'OPEN',
-            createdAt: new Date().toISOString(),
-            attachments: newFiles.map((file) => file.name),
-            comments: []
-        }
+        const formData = new FormData()
+        formData.append('title', newTicket.title.trim())
+        formData.append('description', newTicket.description.trim())
+        formData.append('category', newTicket.category)
+        formData.append('priority', newTicket.priority)
+        formData.append('assetId', newTicket.resourceId) // Maps to Long assetId in backend
+        formData.append('contact', newTicket.preferredContact.trim())
 
-        setTickets((prev) => [createdTicket, ...prev])
-        setSelectedTicketId(createdTicket.id)
-        setNewTicket({
-            title: '',
-            category: 'HARDWARE',
-            resourceId: 'PROJECTOR_LAB_B202_21',
-            description: '',
-            priority: 'MEDIUM',
-            preferredContact: ''
+        newFiles.forEach((file) => {
+            formData.append('files', file)
         })
-        setNewFiles([])
-        setFileWarning('')
+
+        try {
+            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include' // Important for auth cookies!
+            })
+
+            const data = await response.json()
+            
+            if (!response.ok || !data.success) {
+                setFormError(data.message || data.error || 'Failed to create ticket')
+                return
+            }
+
+            const ticketData = data.data; // Server response data wrapper
+
+            // Immediately create local ticket to show in UI
+            const createdTicket = {
+                id: `TCK-${ticketData.ticketId}`, // Use the returned real Database ID
+                title: ticketData.title,
+                description: ticketData.description,
+                location: selectedResource?.location?.name || '',
+                category: newTicket.category,
+                resourceId: newTicket.resourceId,
+                resourceLabel: selectedResource?.name || '',
+                priority: ticketData.priority,
+                preferredContact: ticketData.contact || '',
+                status: ticketData.status || 'OPEN',
+                createdAt: ticketData.createdAt,
+                attachments: ticketData.attachmentUrls ? ticketData.attachmentUrls.map(url => url.substring(url.lastIndexOf('/') + 1)) : [],
+                comments: []
+            }
+
+            setTickets((prev) => [createdTicket, ...prev])
+            setSelectedTicketId(createdTicket.id)
+            setNewTicket({
+                title: '',
+                category: resourceTypes.length > 0 ? resourceTypes[0].name : '',
+                resourceId: allAssets.length > 0 ? allAssets[0].id : '',
+                description: '',
+                priority: 'MEDIUM',
+                preferredContact: ''
+            })
+            setNewFiles([])
+            setFileWarning('')
+        } catch (error) {
+            console.error('Ticket creation error', error)
+            setFormError('Network error occurred while submitting ticket')
+        }
     }
 
     const handleAddComment = (event) => {
@@ -220,9 +263,9 @@ export const TicketsPage = () => {
                                 onChange={handleNewInputChange}
                                 className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                             >
-                                {CATEGORY_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
+                                {resourceTypes.map((type) => (
+                                    <option key={type.id} value={type.name}>
+                                        {type.name}
                                     </option>
                                 ))}
                             </select>
@@ -235,10 +278,11 @@ export const TicketsPage = () => {
                                 value={newTicket.resourceId}
                                 onChange={handleNewInputChange}
                                 className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                disabled={!newTicket.category}
                             >
-                                {RESOURCE_OPTIONS.map((resource) => (
-                                    <option key={resource.value} value={resource.value}>
-                                        {resource.label}
+                                {allAssets.filter(r => r.type?.name === newTicket.category).map((resource) => (
+                                    <option key={resource.id} value={resource.id}>
+                                        {resource.name} {resource.location && `(${resource.location.name})`}
                                     </option>
                                 ))}
                             </select>
