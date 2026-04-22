@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { MessageSquare, Paperclip, PlusCircle } from 'lucide-react'
+import { MessageSquare, Paperclip, PlusCircle, X, Download } from 'lucide-react'
 import { useAuth } from '../../auth/AuthContext'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
@@ -65,7 +65,12 @@ export const TicketsPage = () => {
         resourceLabel: t.assetName || '',
         resourceId: t.assetId,
         createdAt: t.createdAt,
-        attachments: (t.attachmentUrls || []).map(url => url.substring(url.lastIndexOf('/') + 1)),
+        // Store full URL objects so we can render images and offer download links
+        attachments: (t.attachmentUrls || []).map(url => ({
+            name: url.substring(url.lastIndexOf('/') + 1),
+            url: `http://localhost:8085${url}`,
+            isImage: /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(url)
+        })),
         comments: []
     })
 
@@ -117,6 +122,7 @@ export const TicketsPage = () => {
 
     const [filter, setFilter] = useState('ALL')
     const [selectedTicketId, setSelectedTicketId] = useState(null)
+    const [lightboxUrl, setLightboxUrl] = useState(null)
     const [commentInput, setCommentInput] = useState('')
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
@@ -501,15 +507,41 @@ export const TicketsPage = () => {
                                         <Paperclip size={15} /> Attachments
                                     </h4>
                                     {selectedTicket.attachments.length === 0 ? (
-                                        <p className="text-xs text-text-light mt-1">No images uploaded.</p>
+                                        <p className="text-xs text-text-light mt-1">No files uploaded.</p>
                                     ) : (
-                                        <ul className="mt-2 flex flex-wrap gap-2 text-xs text-text-muted">
+                                        <div className="mt-2 flex flex-wrap gap-2">
                                             {selectedTicket.attachments.map((file) => (
-                                                <li key={file} className="px-2.5 py-1 rounded-md bg-white border border-gray-200">
-                                                    {file}
-                                                </li>
+                                                file.isImage ? (
+                                                    <button
+                                                        key={file.url}
+                                                        type="button"
+                                                        title={file.name}
+                                                        onClick={() => setLightboxUrl(file.url)}
+                                                        className="relative group w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:border-primary transition-colors shadow-sm"
+                                                    >
+                                                        <img
+                                                            src={file.url}
+                                                            alt={file.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                            <span className="text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity px-1 text-center">View</span>
+                                                        </div>
+                                                    </button>
+                                                ) : (
+                                                    <a
+                                                        key={file.url}
+                                                        href={file.url}
+                                                        download={file.name}
+                                                        title={file.name}
+                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-gray-200 hover:border-primary hover:text-primary text-xs text-text-muted transition-colors"
+                                                    >
+                                                        <Download size={12} />
+                                                        <span className="max-w-[120px] truncate">{file.name}</span>
+                                                    </a>
+                                                )
                                             ))}
-                                        </ul>
+                                        </div>
                                     )}
                                 </div>
 
@@ -553,6 +585,32 @@ export const TicketsPage = () => {
                     </div>
                 </section>
             </div>
+
+            {/* Lightbox overlay */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setLightboxUrl(null)}
+                    onKeyDown={(e) => e.key === 'Escape' && setLightboxUrl(null)}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <button
+                        type="button"
+                        onClick={() => setLightboxUrl(null)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        aria-label="Close image viewer"
+                    >
+                        <X size={20} />
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="Attachment preview"
+                        className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
         </div>
     )
