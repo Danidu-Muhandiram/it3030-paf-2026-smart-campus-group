@@ -248,8 +248,16 @@ export const ResourceDetailDrawer = ({
                 ) : (
                     <>
                         {/* ── Header banner ── */}
-                        <div className={`${bg} relative shrink-0 flex items-center justify-center h-36`}>
-                            <Icon className={`w-20 h-20 ${iconColor} opacity-75`} strokeWidth={1} />
+                        <div className={`${resource.imageUrl ? '' : bg} relative shrink-0 flex items-center justify-center h-36 overflow-hidden`}>
+                            {resource.imageUrl ? (
+                                <img
+                                    src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085'}${resource.imageUrl}`}
+                                    alt={resource.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <Icon className={`w-20 h-20 ${iconColor} opacity-75`} strokeWidth={1} />
+                            )}
 
                             {/* Favourite button */}
                             <button
@@ -296,12 +304,17 @@ export const ResourceDetailDrawer = ({
                         <div className="flex-1 overflow-y-auto overscroll-contain">
                             <div className="p-5 space-y-6">
 
-                                {/* Title */}
+                                {/* Title + description */}
                                 <div>
                                     <h2 className="text-lg font-bold text-text-main leading-tight">
                                         {resource.name}
                                     </h2>
                                     <p className="text-xs text-text-muted mt-0.5">{resource.type}</p>
+                                    {resource.description && (
+                                        <p className="text-sm text-text-muted mt-2 leading-relaxed">
+                                            {resource.description}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Specs */}
@@ -310,8 +323,14 @@ export const ResourceDetailDrawer = ({
                                         Specifications
                                     </p>
                                     <div className="bg-white border border-gray-100 rounded-xl px-4 divide-y divide-gray-50">
-                                        <SpecRow icon={Tag}      label="Type"     value={resource.type}     />
-                                        <SpecRow icon={MapPin}   label="Location" value={resource.location} />
+                                        <SpecRow icon={Tag}    label="Type"     value={resource.type} />
+                                        <SpecRow
+                                            icon={MapPin}
+                                            label="Location"
+                                            value={resource.locationBuilding
+                                                ? `${resource.location} · ${resource.locationBuilding}`
+                                                : resource.location}
+                                        />
                                         <SpecRow icon={Users}    label="Capacity" value={`${resource.capacity} ${resource.capacity === 1 ? 'person' : 'people'}`} />
                                         <SpecRow
                                             icon={Activity}

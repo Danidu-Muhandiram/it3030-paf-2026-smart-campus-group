@@ -1,39 +1,14 @@
-﻿import React, { useState } from 'react';
-import { Star, SlidersHorizontal } from 'lucide-react';
+﻿import React, { useMemo, useState } from 'react';
+import { AlertCircle, Loader2, Star, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { ResourceCard }          from '../components/ResourceCard';
-import { FilterBar }             from '../components/FilterBar';
-import { CataloguePagination }   from '../components/CataloguePagination';
-import { ResourceDetailDrawer }  from '../components/ResourceDetailDrawer';
-import { useFavourites }         from '../hooks/useFavourites';
-import { useResourceFilters }    from '../hooks/useResourceFilters';
-
-// ---------------------------------------------------------------------------
-// TODO: Replace MOCK_RESOURCES with an API call via resourceService.getAllAssets()
-// ---------------------------------------------------------------------------
-const MOCK_RESOURCES = [
-    { id: 1,  name: 'Main Auditorium',        type: 'Lecture Hall',  location: 'Block B', capacity: 200, status: 'ACTIVE'         },
-    { id: 2,  name: 'B401 Computing Lab',     type: 'Computer Lab',  location: 'Block B', capacity: 50,  status: 'ACTIVE'         },
-    { id: 3,  name: 'B305 Computing Lab',     type: 'Computer Lab',  location: 'Block B', capacity: 30,  status: 'ACTIVE'         },
-    { id: 4,  name: 'Projector #003',         type: 'Projector',     location: 'Block B', capacity: 1,   status: 'OUT_OF_SERVICE'  },
-    { id: 5,  name: 'Projector #001',         type: 'Projector',     location: 'Block B', capacity: 1,   status: 'ACTIVE'         },
-    { id: 6,  name: 'B402 Computing Lab',     type: 'Computer Lab',  location: 'Block B', capacity: 50,  status: 'ACTIVE'         },
-    { id: 7,  name: 'Projector #007',         type: 'Projector',     location: 'Block B', capacity: 1,   status: 'ACTIVE'         },
-    { id: 8,  name: 'Block B Seminar Room',   type: 'Lecture Hall',  location: 'Block B', capacity: 50,  status: 'OUT_OF_SERVICE'  },
-    { id: 9,  name: 'Projector #009',         type: 'Projector',     location: 'Block B', capacity: 1,   status: 'ACTIVE'         },
-    { id: 10, name: 'Lecture Hall B202',      type: 'Lecture Hall',  location: 'Block B', capacity: 80,  status: 'ACTIVE'         },
-    { id: 11, name: 'B403 Computing Lab',     type: 'Computer Lab',  location: 'Block B', capacity: 50,  status: 'ACTIVE'         },
-    { id: 12, name: 'Block A Projector',      type: 'Projector',     location: 'Block A', capacity: 1,   status: 'ACTIVE'         },
-    { id: 13, name: 'Science Lab 01',         type: 'Science Lab',   location: 'Block A', capacity: 30,  status: 'ACTIVE'         },
-    { id: 14, name: 'Meeting Room 5A',        type: 'Meeting Room',  location: 'Block A', capacity: 20,  status: 'ACTIVE'         },
-    { id: 15, name: 'Workshop Bay 2',         type: 'Workshop',      location: 'Block C', capacity: 25,  status: 'OUT_OF_SERVICE'  },
-    { id: 16, name: 'Lecture Hall C101',      type: 'Lecture Hall',  location: 'Block C', capacity: 120, status: 'ACTIVE'         },
-];
-
-// Derive unique sorted option lists once at module level
-const TYPE_OPTIONS     = [...new Set(MOCK_RESOURCES.map((r) => r.type))].sort();
-const LOCATION_OPTIONS = [...new Set(MOCK_RESOURCES.map((r) => r.location))].sort();
+import { ResourceCard }         from '../components/ResourceCard';
+import { FilterBar }            from '../components/FilterBar';
+import { CataloguePagination }  from '../components/CataloguePagination';
+import { ResourceDetailDrawer } from '../components/ResourceDetailDrawer';
+import { useFavourites }        from '../hooks/useFavourites';
+import { useResources }         from '../hooks/useResources';
+import { useResourceFilters }   from '../hooks/useResourceFilters';
 
 // ---------------------------------------------------------------------------
 // Tabs config
@@ -47,13 +22,20 @@ const TABS = [
 export const FacilitiesCataloguePage = () => {
     const navigate = useNavigate();
 
-    const [activeTab,       setActiveTab]       = useState('all');
-    const [viewMode,        setViewMode]        = useState('grid');
+    const [activeTab,        setActiveTab]        = useState('all');
+    const [viewMode,         setViewMode]         = useState('grid');
     const [selectedResource, setSelectedResource] = useState(null);
 
-    const { favourites, toggleFavourite } = useFavourites();
+    // ── Live data ──────────────────────────────────────────────────────────
+    const { resources, loading, error, refetch } = useResources();
 
-    const filters = useResourceFilters(MOCK_RESOURCES, favourites, activeTab);
+    // Derive unique sorted filter options from live data
+    const TYPE_OPTIONS     = useMemo(() => [...new Set(resources.map((r) => r.type))].sort((a, b) => a.localeCompare(b)),     [resources]);
+    const LOCATION_OPTIONS = useMemo(() => [...new Set(resources.map((r) => r.location))].sort((a, b) => a.localeCompare(b)), [resources]);
+
+    // ── Filters & favourites ───────────────────────────────────────────────
+    const { favourites, toggleFavourite } = useFavourites();
+    const filters = useResourceFilters(resources, favourites, activeTab);
 
     const {
         search, selectedType, selectedLocation, selectedCapacity,
@@ -64,9 +46,10 @@ export const FacilitiesCataloguePage = () => {
         hasActiveFilters, resetFilters, handleFilterChange,
     } = filters;
 
-    const navigateToBook    = (r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`);
-    const openDetails       = (r) => setSelectedResource(r);
-    const closeDetails      = ()  => setSelectedResource(null);
+    // ── Actions ────────────────────────────────────────────────────────────
+    const navigateToBook = (r) => navigate(`/dashboard/bookings/new?resourceId=${r.id}`);
+    const openDetails    = (r) => setSelectedResource(r);
+    const closeDetails   = ()  => setSelectedResource(null);
 
     return (
         <div className="space-y-4 sm:space-y-6 pb-10 px-0">
@@ -81,12 +64,12 @@ export const FacilitiesCataloguePage = () => {
             </div>
 
             {/* Tabs — horizontally scrollable on mobile */}
-            <div className="flex items-center gap-1 border-b border-gray-200 -mx-1 px-1">
+            <div className="flex items-center gap-1 border-b border-gray-200 -mx-1 px-1 overflow-x-auto scrollbar-none">
                 {TABS.map(({ key, label, icon: Icon }) => (
                     <button
                         key={key}
                         onClick={() => { setActiveTab(key); setCurrentPage(1); }}
-                        className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                        className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
                             activeTab === key
                                 ? 'border-primary text-primary'
                                 : 'border-transparent text-text-muted hover:text-text-main'
@@ -103,59 +86,88 @@ export const FacilitiesCataloguePage = () => {
                 ))}
             </div>
 
-            {/* Filter bar */}
-            <FilterBar
-                search={search}
-                selectedType={selectedType}
-                selectedLocation={selectedLocation}
-                selectedCapacity={selectedCapacity}
-                availableOnly={availableOnly}
-                sortBy={sortBy}
-                viewMode={viewMode}
-                resultCount={filtered.length}
-                hasActiveFilters={hasActiveFilters}
-                typeOptions={TYPE_OPTIONS}
-                locationOptions={LOCATION_OPTIONS}
-                onSearchChange={handleFilterChange(setSearch)}
-                onTypeChange={handleFilterChange(setSelectedType)}
-                onLocationChange={handleFilterChange(setSelectedLocation)}
-                onCapacityChange={handleFilterChange(setSelectedCapacity)}
-                onAvailableOnlyChange={(e) => { setAvailableOnly(e.target.checked); setCurrentPage(1); }}
-                onSortChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
-                onViewModeChange={setViewMode}
-                onResetFilters={resetFilters}
-            />
-
-            {/* Resource grid or list */}
-            {paginated.length > 0 ? (
-                <div className={
-                    viewMode === 'grid'
-                        ? 'grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4'
-                        : 'flex flex-col gap-2'
-                }>
-                    {paginated.map((resource) => (
-                        <ResourceCard
-                            key={resource.id}
-                            resource={resource}
-                            listView={viewMode === 'list'}
-                            isFavourite={favourites.has(resource.id)}
-                            onToggleFavourite={toggleFavourite}
-                            onViewDetails={openDetails}
-                        />
-                    ))}
+            {/* ── Loading ── */}
+            {loading && (
+                <div className="flex items-center justify-center py-24 gap-3 text-text-muted">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <span className="text-sm">Loading resources…</span>
                 </div>
-            ) : (
-                <EmptyState activeTab={activeTab} onBrowseAll={() => setActiveTab('all')} onClearFilters={resetFilters} />
             )}
 
-            {/* Pagination */}
-            <CataloguePagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-            />
+            {/* ── Error ── */}
+            {!loading && error && (
+                <div className="flex flex-col items-center justify-center py-16 gap-3">
+                    <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+                        <AlertCircle className="w-6 h-6 text-red-500" />
+                    </div>
+                    <p className="text-sm font-medium text-text-main">Could not load resources</p>
+                    <p className="text-xs text-text-muted">{error}</p>
+                    <button onClick={refetch} className="mt-1 text-xs font-semibold text-primary hover:underline">
+                        Try again
+                    </button>
+                </div>
+            )}
 
-            {/* Resource detail drawer */}
+            {/* ── Main content ── */}
+            {!loading && !error && (
+                <>
+                    <FilterBar
+                        search={search}
+                        selectedType={selectedType}
+                        selectedLocation={selectedLocation}
+                        selectedCapacity={selectedCapacity}
+                        availableOnly={availableOnly}
+                        sortBy={sortBy}
+                        viewMode={viewMode}
+                        resultCount={filtered.length}
+                        hasActiveFilters={hasActiveFilters}
+                        typeOptions={TYPE_OPTIONS}
+                        locationOptions={LOCATION_OPTIONS}
+                        onSearchChange={handleFilterChange(setSearch)}
+                        onTypeChange={handleFilterChange(setSelectedType)}
+                        onLocationChange={handleFilterChange(setSelectedLocation)}
+                        onCapacityChange={handleFilterChange(setSelectedCapacity)}
+                        onAvailableOnlyChange={(e) => { setAvailableOnly(e.target.checked); setCurrentPage(1); }}
+                        onSortChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+                        onViewModeChange={setViewMode}
+                        onResetFilters={resetFilters}
+                    />
+
+                    {paginated.length > 0 ? (
+                        <div className={
+                            viewMode === 'grid'
+                                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4'
+                                : 'flex flex-col gap-2'
+                        }>
+                            {paginated.map((resource) => (
+                                <ResourceCard
+                                    key={resource.id}
+                                    resource={resource}
+                                    listView={viewMode === 'list'}
+                                    isFavourite={favourites.has(resource.id)}
+                                    onToggleFavourite={toggleFavourite}
+                                    onViewDetails={openDetails}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <EmptyState
+                            activeTab={activeTab}
+                            hasFilters={hasActiveFilters}
+                            onBrowseAll={() => setActiveTab('all')}
+                            onClearFilters={resetFilters}
+                        />
+                    )}
+
+                    <CataloguePagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </>
+            )}
+
+            {/* Resource detail drawer — rendered outside main so it always overlays */}
             <ResourceDetailDrawer
                 resource={selectedResource}
                 isFavourite={selectedResource ? favourites.has(selectedResource.id) : false}
@@ -170,7 +182,7 @@ export const FacilitiesCataloguePage = () => {
 // ---------------------------------------------------------------------------
 // Empty state helper â€” kept in this file as it's page-specific UI
 // ---------------------------------------------------------------------------
-const EmptyState = ({ activeTab, onBrowseAll, onClearFilters }) => (
+const EmptyState = ({ activeTab, hasFilters, onBrowseAll, onClearFilters }) => (
     <div className="flex flex-col items-center justify-center py-24 text-text-muted gap-3">
         {activeTab === 'favourites' ? (
             <>
@@ -183,10 +195,14 @@ const EmptyState = ({ activeTab, onBrowseAll, onClearFilters }) => (
         ) : (
             <>
                 <SlidersHorizontal className="w-10 h-10 opacity-30" />
-                <p className="text-sm font-medium">No resources match your filters.</p>
-                <button onClick={onClearFilters} className="text-xs underline hover:text-primary transition-colors">
-                    Clear all filters
-                </button>
+                <p className="text-sm font-medium">
+                    {hasFilters ? 'No resources match your filters.' : 'No resources found.'}
+                </p>
+                {hasFilters && (
+                    <button onClick={onClearFilters} className="text-xs underline hover:text-primary transition-colors">
+                        Clear all filters
+                    </button>
+                )}
             </>
         )}
     </div>

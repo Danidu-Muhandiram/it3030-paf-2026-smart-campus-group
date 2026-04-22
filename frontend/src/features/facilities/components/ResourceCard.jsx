@@ -44,7 +44,10 @@ const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails }) =>
 
     return (
         <article
+            role="button"
+            tabIndex={0}
             onClick={() => onViewDetails?.(resource)}
+            onKeyDown={(e) => e.key === 'Enter' && onViewDetails?.(resource)}
             className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/30 transition-all flex items-center gap-3 px-3 sm:px-4 py-3 cursor-pointer group"
         >
             <div className={`${bg} shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center`}>
@@ -86,18 +89,29 @@ const ListRow = ({ resource, isFavourite, onToggleFavourite, onViewDetails }) =>
 // Grid card variant
 // ---------------------------------------------------------------------------
 const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails }) => {
-    const { name, type, location, capacity, status } = resource;
+    const { name, type, location, capacity, status, description, imageUrl } = resource;
     const { bg, iconColor, icon: Icon } = getTypeConfig(type);
     const isActive = status === 'ACTIVE';
 
     return (
         <article
+            role="button"
+            tabIndex={0}
             onClick={() => onViewDetails?.(resource)}
+            onKeyDown={(e) => e.key === 'Enter' && onViewDetails?.(resource)}
             className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary/30 transition-all flex flex-col overflow-hidden cursor-pointer group"
         >
             {/* Banner */}
-            <div className={`${bg} relative flex items-center justify-center h-32`}>
-                <Icon className={`w-16 h-16 ${iconColor} opacity-80`} strokeWidth={1.2} />
+            <div className={`${imageUrl ? '' : bg} relative flex items-center justify-center h-32 overflow-hidden`}>
+                {imageUrl ? (
+                    <img
+                        src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085'}${imageUrl}`}
+                        alt={name}
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <Icon className={`w-16 h-16 ${iconColor} opacity-80`} strokeWidth={1.2} />
+                )}
                 <FavouriteButton
                     isFavourite={isFavourite}
                     onToggle={() => onToggleFavourite?.(resource.id)}
@@ -110,6 +124,10 @@ const GridCard = ({ resource, isFavourite, onToggleFavourite, onViewDetails }) =
             {/* Body */}
             <div className="p-4 flex flex-col flex-1 gap-3">
                 <h3 className="text-sm font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{name}</h3>
+
+                {description && (
+                    <p className="text-xs text-text-muted line-clamp-2 leading-relaxed">{description}</p>
+                )}
 
                 <ul className="space-y-1 text-xs text-text-muted">
                     <li><span className="font-medium text-text-main">Type: </span>{type}</li>
