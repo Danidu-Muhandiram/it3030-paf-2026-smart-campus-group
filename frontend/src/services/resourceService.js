@@ -27,6 +27,14 @@ export const updateAsset = (id, payload) =>
 export const deleteAsset = (id) =>
     axiosInstance.delete(`/assets/${id}`).then((r) => r.data);
 
+/**
+ * GET /api/assets/{id}/availability?date=YYYY-MM-DD
+ * Returns array of { startTime, endTime, booked, purpose }
+ */
+export const getAssetAvailability = (assetId, date) =>
+    axiosInstance.get(`/assets/${assetId}/availability`, { params: { date } })
+        .then((r) => r.data.data);
+
 // ─── Locations ───────────────────────────────────────────────────────────────
 
 export const getAllLocations = () =>
