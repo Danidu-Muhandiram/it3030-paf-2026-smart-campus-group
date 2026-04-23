@@ -347,13 +347,21 @@ public class TicketService {
                 Ticket ticket = ticketRepository.findById(ticketId)
                                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-                // For now, comments are scoped to the ticket reporter only.
-                String ownerEmail = ticket.getReportedBy() != null ? ticket.getReportedBy().getEmail() : null;
-                if (ownerEmail == null || !ownerEmail.equalsIgnoreCase(email)) {
-                        throw new RuntimeException("You do not have access to this ticket");
+                User user = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+
+                String role = user.getRole().getName();
+
+                // Allow if: User is Reporter, OR User is ADMIN, OR User is TECHNICIAN
+                boolean isReporter = ticket.getReportedBy() != null && ticket.getReportedBy().getEmail().equalsIgnoreCase(email);
+                boolean isAdmin = "ADMIN".equalsIgnoreCase(role);
+                boolean isTechnician = "TECHNICIAN".equalsIgnoreCase(role);
+
+                if (isReporter || isAdmin || isTechnician) {
+                        return ticket;
                 }
 
-                return ticket;
+                throw new RuntimeException("You do not have access to this ticket");
         }
 
         private TicketComment getOwnedComment(Long ticketId, Long commentId, String email) {
@@ -394,6 +402,7 @@ public class TicketService {
                                 .commentId(comment.getId())
                                 .ticketId(comment.getTicket().getId())
                                 .authorName(authorName)
+                                .authorEmail(comment.getCommentedBy() != null ? comment.getCommentedBy().getEmail() : null)
                                 .comment(comment.getCommentText())
                                 .createdAt(comment.getCreatedAt())
                                 .updatedAt(comment.getUpdatedAt())

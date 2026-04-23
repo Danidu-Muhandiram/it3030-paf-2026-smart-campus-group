@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, Ticket, CheckCircle, XCircle, Clock, Check, AlertCircle, User, MapPin, Phone, Calendar, Paperclip, Download } from 'lucide-react';
 import { assignTicket, getAllTickets, updateTicketStatus } from '../services/adminTicketService';
+import { TicketComments } from '../../tickets/components/TicketComments';
 
 const statusStyles = {
     OPEN: 'bg-sky-50 text-sky-700 border-sky-200',
@@ -309,6 +310,13 @@ export const AdminTicketsPage = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                <div className="border-t border-gray-50 pt-6">
+                                    <TicketComments 
+                                        ticketId={selectedTicket.ticketId} 
+                                        ticketStatus={selectedTicket.status}
+                                    />
+                                </div>
                             </div>
 
                             {/* Detail Actions */}

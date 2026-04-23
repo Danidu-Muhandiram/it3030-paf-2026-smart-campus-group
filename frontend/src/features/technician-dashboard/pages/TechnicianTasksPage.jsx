@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Ticket, Clock, CheckCircle, MapPin, Calendar, User, Phone, Paperclip, Download } from 'lucide-react';
 import { getMyAssignedTickets, resolveTicket, startTicketProgress } from '../services/technicianTicketService';
+import { TicketComments } from '../../tickets/components/TicketComments';
 
 const statusStyles = {
     OPEN: 'bg-sky-50 text-sky-700 border-sky-200',
@@ -245,6 +246,13 @@ export const TechnicianTasksPage = () => {
                                             })}
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-6">
+                                    <TicketComments 
+                                        ticketId={selectedTask.ticketId} 
+                                        ticketStatus={selectedTask.status}
+                                    />
                                 </div>
 
                                 {/* Action Buttons */}
