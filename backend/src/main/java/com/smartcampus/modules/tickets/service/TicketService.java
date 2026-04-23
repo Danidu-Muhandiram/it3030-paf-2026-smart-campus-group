@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -112,6 +113,9 @@ public class TicketService {
                                 .assetName(asset.getName())
                                 .reportedByName(reportedBy.getFirstName() + " " + reportedBy.getLastName())
                                 .createdAt(savedTicket.getCreatedAt())
+                                .updatedAt(savedTicket.getUpdatedAt())
+                                .resolvedAt(savedTicket.getResolvedAt())
+                                .closedAt(savedTicket.getClosedAt())
                                 .attachmentUrls(savedTicket.getAttachments().stream()
                                                 .map(TicketAttachment::getFilePath)
                                                 .collect(Collectors.toList()))
@@ -141,29 +145,112 @@ public class TicketService {
         }
 
         @Transactional
+        public TicketListItem assignForTechnicianDashboard(Long ticketId) {
+                Ticket ticket = ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+                if ("CLOSED".equalsIgnoreCase(ticket.getStatus()) || "REJECTED".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Cannot assign a closed or rejected ticket");
+                }
+
+                if (!"OPEN".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Only open tickets can be assigned");
+                }
+
+                ticket.setStatus("IN_PROGRESS");
+                ticket.setRejectionReason(null);
+
+                Ticket savedTicket = ticketRepository.save(ticket);
+                return mapToListItem(savedTicket);
+        }
+
+        @Transactional(readOnly = true)
+        public List<TicketListItem> getAssignedTickets(String technicianEmail) {
+                return ticketRepository.findByStatusInOrderByCreatedAtDesc(List.of("IN_PROGRESS", "RESOLVED"))
+                                .stream()
+                                .map(this::mapToListItem)
+                                .collect(Collectors.toList());
+        }
+
+        @Transactional
+        public TicketListItem markInProgressByTechnician(String technicianEmail, Long ticketId) {
+                Ticket ticket = getTicketForTechnician(ticketId);
+                if ("CLOSED".equalsIgnoreCase(ticket.getStatus()) || "REJECTED".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Cannot start progress for a closed or rejected ticket");
+                }
+
+                ticket.setStatus("IN_PROGRESS");
+                Ticket savedTicket = ticketRepository.save(ticket);
+                return mapToListItem(savedTicket);
+        }
+
+        @Transactional
+        public TicketListItem resolveByTechnician(String technicianEmail, Long ticketId, String resolutionNotes) {
+                if (resolutionNotes == null || resolutionNotes.trim().isEmpty()) {
+                        throw new RuntimeException("Resolution notes are required");
+                }
+
+                Ticket ticket = getTicketForTechnician(ticketId);
+                if ("CLOSED".equalsIgnoreCase(ticket.getStatus()) || "REJECTED".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Cannot resolve a closed or rejected ticket");
+                }
+
+                ticket.setStatus("RESOLVED");
+                ticket.setResolutionNotes(resolutionNotes.trim());
+                ticket.setRejectionReason(null);
+                ticket.setResolvedAt(LocalDateTime.now());
+
+                Ticket savedTicket = ticketRepository.save(ticket);
+                return mapToListItem(savedTicket);
+        }
+
+        @Transactional
         public TicketListItem updateTicketStatus(Long ticketId, String status, String notes, String rejectionReason) {
                 Ticket ticket = ticketRepository.findById(ticketId)
                                 .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-                String oldStatus = ticket.getStatus();
-                String newStatus = status.toUpperCase();
+                if (status == null || status.trim().isEmpty()) {
+                        throw new RuntimeException("Status is required");
+                }
 
-                // Basic validation: once CLOSED or REJECTED, status cannot be changed
-                if ("CLOSED".equals(oldStatus) || "REJECTED".equals(oldStatus)) {
+                String newStatus = status.trim().toUpperCase();
 
+                if ("CLOSED".equalsIgnoreCase(ticket.getStatus()) && !"CLOSED".equals(newStatus)) {
+                        throw new RuntimeException("Closed tickets cannot be changed");
                 }
 
                 ticket.setStatus(newStatus);
 
-                if (notes != null) {
-                        ticket.setResolutionNotes(notes);
+                if (notes != null && !notes.trim().isEmpty()) {
+                        ticket.setResolutionNotes(notes.trim());
                 }
 
                 if ("REJECTED".equals(newStatus)) {
                         if (rejectionReason == null || rejectionReason.trim().isEmpty()) {
                                 throw new RuntimeException("Rejection reason is required when rejecting a ticket");
                         }
-                        ticket.setRejectionReason(rejectionReason);
+                        ticket.setRejectionReason(rejectionReason.trim());
+                        ticket.setResolvedAt(null);
+                        ticket.setClosedAt(null);
+                } else {
+                        ticket.setRejectionReason(null);
+                }
+
+                if ("RESOLVED".equals(newStatus)) {
+                        if (ticket.getResolutionNotes() == null || ticket.getResolutionNotes().trim().isEmpty()) {
+                                throw new RuntimeException("Resolution notes are required when resolving a ticket");
+                        }
+                        ticket.setResolvedAt(LocalDateTime.now());
+                        ticket.setClosedAt(null);
+                }
+
+                if ("CLOSED".equals(newStatus)) {
+                        ticket.setClosedAt(LocalDateTime.now());
+                }
+
+                if ("OPEN".equals(newStatus) || "IN_PROGRESS".equals(newStatus)) {
+                        ticket.setResolvedAt(null);
+                        ticket.setClosedAt(null);
                 }
 
                 Ticket savedTicket = ticketRepository.save(ticket);
@@ -177,6 +264,10 @@ public class TicketService {
                                                 : "";
                 String assetName = ticket.getAsset() != null ? ticket.getAsset().getName() : "";
                 Long assetId = ticket.getAsset() != null ? ticket.getAsset().getId() : null;
+                Long assignedToId = ticket.getAssignedTo() != null ? ticket.getAssignedTo().getId() : null;
+                String assignedToName = ticket.getAssignedTo() != null
+                                ? (ticket.getAssignedTo().getFirstName() + " " + ticket.getAssignedTo().getLastName()).trim()
+                                : null;
 
                 return TicketListItem.builder()
                                 .ticketId(ticket.getId())
@@ -191,7 +282,12 @@ public class TicketService {
                                 .reportedByName(
                                                 ticket.getReportedBy().getFirstName() + " "
                                                                 + ticket.getReportedBy().getLastName())
+                                .assignedToId(assignedToId)
+                                .assignedToName(assignedToName)
                                 .createdAt(ticket.getCreatedAt())
+                                .updatedAt(ticket.getUpdatedAt())
+                                .resolvedAt(ticket.getResolvedAt())
+                                .closedAt(ticket.getClosedAt())
                                 .rejectionReason(ticket.getRejectionReason())
                                 .resolutionNotes(ticket.getResolutionNotes())
                                 .attachmentUrls(ticket.getAttachments().stream()
@@ -271,6 +367,11 @@ public class TicketService {
                 }
 
                 return comment;
+        }
+
+        private Ticket getTicketForTechnician(Long ticketId) {
+                return ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
         }
 
         private TicketCommentResponse toTicketCommentResponse(TicketComment comment) {

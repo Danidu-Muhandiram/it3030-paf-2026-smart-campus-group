@@ -18,7 +18,12 @@ public class TicketResponse {
     private Long assetId;
     private String assetName;
     private String reportedByName;
+    private Long assignedToId;
+    private String assignedToName;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime resolvedAt;
+    private LocalDateTime closedAt;
     private String rejectionReason;
     private String resolutionNotes;
     private List<String> attachmentUrls;

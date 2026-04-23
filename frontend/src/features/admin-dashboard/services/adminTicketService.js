@@ -7,6 +7,11 @@ export const getAllTickets = async () => {
     return response.data;
 };
 
+export const assignTicket = async (ticketId) => {
+    const response = await axios.put(`${API_URL}/${ticketId}/assign`);
+    return response.data;
+};
+
 export const updateTicketStatus = async (ticketId, statusData) => {
     // statusData = { status, resolutionNotes, rejectionReason }
     const response = await axios.put(`${API_URL}/${ticketId}/status`, statusData);

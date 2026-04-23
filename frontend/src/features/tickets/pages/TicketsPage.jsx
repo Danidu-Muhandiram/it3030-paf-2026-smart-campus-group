@@ -58,6 +58,9 @@ export const TicketsPage = () => {
         description: t.description,
         priority: t.priority,
         status: t.status,
+        assignedToName: t.assignedToName || '',
+        resolutionNotes: t.resolutionNotes || '',
+        rejectionReason: t.rejectionReason || '',
         preferredContact: t.contact || '',
         location: t.locationName || '',
         resourceLabel: t.assetName || '',
@@ -693,6 +696,27 @@ export const TicketsPage = () => {
                                     <p className="text-sm text-text-muted">{selectedTicket.description}</p>
                                 </div>
 
+                                {selectedTicket.assignedToName && (
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-emerald-700">Assigned Technician</p>
+                                        <p className="text-sm text-emerald-800 mt-0.5">{selectedTicket.assignedToName}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.resolutionNotes && (
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-emerald-700">Resolution Update</p>
+                                        <p className="text-sm text-emerald-800 mt-0.5">{selectedTicket.resolutionNotes}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.rejectionReason && (
+                                    <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-rose-700">Rejection Reason</p>
+                                        <p className="text-sm text-rose-800 mt-0.5">{selectedTicket.rejectionReason}</p>
+                                    </div>
+                                )}
+
                                 <div>
                                     <h4 className="text-sm font-semibold text-text-main flex items-center gap-2">
                                         <Paperclip size={15} /> Attachments
@@ -728,7 +752,7 @@ export const TicketsPage = () => {
                                                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-gray-200 hover:border-primary hover:text-primary text-xs text-text-muted transition-colors"
                                                     >
                                                         <Download size={12} />
-                                                        <span className="max-w-[120px] truncate">{file.name}</span>
+                                                        <span className="max-w-30 truncate">{file.name}</span>
                                                     </a>
                                                 )
                                             ))}

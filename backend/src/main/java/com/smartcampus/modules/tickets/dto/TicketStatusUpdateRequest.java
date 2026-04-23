@@ -5,5 +5,6 @@ import lombok.Data;
 @Data
 public class TicketStatusUpdateRequest {
     private String status;
+    private String resolutionNotes;
     private String rejectionReason;
 }

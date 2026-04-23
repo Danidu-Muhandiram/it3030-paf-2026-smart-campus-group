@@ -3,7 +3,9 @@ package com.smartcampus.modules.tickets.controller;
 import com.smartcampus.modules.tickets.dto.TicketCommentRequest;
 import com.smartcampus.modules.tickets.dto.TicketCommentResponse;
 import com.smartcampus.modules.tickets.dto.TicketListItem;
+import com.smartcampus.modules.tickets.dto.TicketResolveRequest;
 import com.smartcampus.modules.tickets.dto.TicketResponse;
+import com.smartcampus.modules.tickets.dto.TicketStatusUpdateRequest;
 import com.smartcampus.modules.tickets.service.TicketService;
 import com.smartcampus.shared.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -116,18 +118,67 @@ public class TicketController {
         }
     }
 
+    @PutMapping("/admin/{ticketId}/assign")
+    public ResponseEntity<ApiResponse<TicketListItem>> assignTicketToTechnicianDashboard(
+            @PathVariable Long ticketId) {
+        try {
+            TicketListItem ticket = ticketService.assignForTechnicianDashboard(ticketId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Ticket assigned successfully", ticket));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
     @PutMapping("/admin/{ticketId}/status")
     public ResponseEntity<ApiResponse<TicketListItem>> updateTicketStatus(
             @PathVariable Long ticketId,
-            @Valid @RequestBody com.smartcampus.modules.tickets.dto.TicketStatusUpdateRequest request) {
+            @Valid @RequestBody TicketStatusUpdateRequest request) {
         try {
             TicketListItem ticket = ticketService.updateTicketStatus(
                     ticketId, 
                     request.getStatus(), 
-                    null, 
+                    request.getResolutionNotes(), 
                     request.getRejectionReason()
             );
             return ResponseEntity.ok(new ApiResponse<>(true, "Ticket status updated successfully", ticket));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    // Technician Endpoints
+
+    @GetMapping("/technician/my")
+    public ResponseEntity<ApiResponse<List<TicketListItem>>> getAssignedTickets(
+            @AuthenticationPrincipal String email) {
+        try {
+            List<TicketListItem> tickets = ticketService.getAssignedTickets(email);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Assigned tickets fetched successfully", tickets));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/technician/{ticketId}/start")
+    public ResponseEntity<ApiResponse<TicketListItem>> markInProgress(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long ticketId) {
+        try {
+            TicketListItem ticket = ticketService.markInProgressByTechnician(email, ticketId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Ticket marked as in progress", ticket));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/technician/{ticketId}/resolve")
+    public ResponseEntity<ApiResponse<TicketListItem>> resolveTicket(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long ticketId,
+            @Valid @RequestBody TicketResolveRequest request) {
+        try {
+            TicketListItem ticket = ticketService.resolveByTechnician(email, ticketId, request.getResolutionNotes());
+            return ResponseEntity.ok(new ApiResponse<>(true, "Ticket resolved successfully", ticket));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
         }
