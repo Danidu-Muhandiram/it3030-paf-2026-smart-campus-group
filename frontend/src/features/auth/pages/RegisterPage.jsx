@@ -148,7 +148,7 @@ export const RegisterPage = () => {
                             <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center">
                                 <Building2 className="w-5 h-5 text-white" />
                             </div>
-                            SLIIT Smart Campus
+                            Apex Campus
                         </Link>
 
                         <Link to="/" className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 flex items-center justify-center transition-colors shrink-0">
@@ -172,7 +172,7 @@ export const RegisterPage = () => {
                         </motion.h2>
 
                         <motion.p variants={itemVariants} className="text-blue-100/90 text-[15px] lg:text-base mb-8 leading-relaxed font-light">
-                            Join the SLIIT smart campus hub to seamlessly manage facilities, bookings, and operations all in one unified, intelligent platform.
+                            Join the Apex smart campus hub to seamlessly manage facilities, bookings, and operations all in one unified, intelligent platform.
                         </motion.p>
 
                         {/* Feature list */}
@@ -200,7 +200,7 @@ export const RegisterPage = () => {
                     </motion.div>
 
                     <div className="mt-auto text-blue-300/60 text-[13px]">
-                        © 2026 SLIIT Smart Campus Operations Hub
+                        © 2026 Apex Smart Campus Operations Hub
                     </div>
                 </div>
             </div>
@@ -268,7 +268,7 @@ export const RegisterPage = () => {
                             <input
                                 type="email"
                                 name="email"
-                                placeholder="idnumber@my.sliit.lk"
+                                placeholder="idnumber@my.apex.lk"
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
@@ -283,7 +283,7 @@ export const RegisterPage = () => {
                             <input
                                 type="text"
                                 name="universityId"
-                                placeholder="e.g. IT2612345678"
+                                placeholder="e.g. IT2612345"
                                 value={formData.universityId}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main"
@@ -359,7 +359,7 @@ export const RegisterPage = () => {
                             </div>
                         </div>
 
-                        <button 
+                        <button
                             type="button"
                             aria-label="Sign in with Google"
                             onClick={handleGoogleLogin}
