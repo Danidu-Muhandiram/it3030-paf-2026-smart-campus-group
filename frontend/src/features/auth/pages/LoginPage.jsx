@@ -25,8 +25,13 @@ export const LoginPage = () => {
 
     // Keep a single login UX while routing 
     // users by server-assigned role.
-    const resolveDashboardPath = (role) =>
-        String(role || '').toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard';
+    const resolveDashboardPath = (role) => {
+        const r = String(role || '').toUpperCase();
+        if (r === 'ADMIN') return '/admin';
+        if (r === 'TECHNICIAN') return '/technician';
+        return '/dashboard';
+    };
+
 
     useEffect(() => {
         if (status === 'authenticated' && hasStartedLoginRef.current) {
