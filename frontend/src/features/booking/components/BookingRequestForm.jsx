@@ -91,23 +91,53 @@ export function BookingRequestForm({ onSubmit }) {
     setIsLoading(true);
 
     try {
-      if (onSubmit) {
-        await onSubmit(formData);
+      const selectedResource = RESOURCES.find(
+        (r) => r.id === formData.resourceId
+      );
+
+      const formatDate = (date) => {
+        const d = new Date(date);
+        return d.toISOString().split('T')[0];
+      };
+
+      function convertTo24Hour(time) {
+        if (!time) return "";
+      
+        // already 24h format (08:00)
+        if (time.includes(":") && !time.includes("AM") && !time.includes("PM")) {
+          return time + ":00";
+        }
+      
+        const [timePart, modifier] = time.split(" ");
+        let [hours, minutes] = timePart.split(":");
+      
+        if (modifier === "PM" && hours !== "12") {
+          hours = String(parseInt(hours, 10) + 12);
+        }
+      
+        if (modifier === "AM" && hours === "12") {
+          hours = "00";
+        }
+      
+        return `${hours}:${minutes}:00`;
       }
 
-      alert('Booking request submitted successfully');
+      const requestData = {
+        resourceName: selectedResource?.name,
+        bookingDate: formatDate(formData.date),
+        startTime: convertTo24Hour(formData.startTime),
+        endTime: convertTo24Hour(formData.endTime),
+        purpose: formData.purpose,
+        expectedAttendees: parseInt(formData.expectedAttendees)
+      };
 
-      // Reset form
-      setFormData({
-        resourceId: '',
-        date: '',
-        startTime: '',
-        endTime: '',
-        purpose: '',
-        expectedAttendees: ''
-      });
+      console.log("FINAL REQUEST:", requestData);
+
+      if (onSubmit) {
+        await onSubmit(requestData);
+      }
     } catch (error) {
-      alert('Failed to submit booking request');
+      alert(error?.message || 'Failed to submit booking request');
     } finally {
       setIsLoading(false);
     }
@@ -266,4 +296,3 @@ export function BookingRequestForm({ onSubmit }) {
     </div>
   );
 }
-0

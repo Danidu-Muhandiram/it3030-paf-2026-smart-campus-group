@@ -33,9 +33,6 @@ public class CreateBookingRequest {
     @Min(value = 1, message = "At least 1 attendee is required")
     private Integer expectedAttendees;
 
-    public CreateBookingRequest() {
-    }
-
     public String getResourceName() {
         return resourceName;
     }

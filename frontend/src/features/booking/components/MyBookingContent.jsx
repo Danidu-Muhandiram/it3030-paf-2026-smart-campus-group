@@ -1,11 +1,33 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookingCard } from './BookingCard';
+import axiosInstance from '../../../services/axios';
 
 export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
   const [bookings, setBookings] = useState(initialBookings);
   const [filter, setFilter] = useState('ALL');
   const [cancelingId, setCancelingId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
+
+  // Fetch bookings from backend
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+      setIsFetching(true);
+      const response = await axiosInstance.get('/bookings/my-bookings');
+      const sortedBookings = (response.data?.data || []).sort((a, b) =>
+        new Date(b.createdAt || b.bookingDate) - new Date(a.createdAt || a.bookingDate)
+      );
+      setBookings(sortedBookings);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const filteredBookings = filter === 'ALL'
     ? bookings
@@ -14,10 +36,9 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
   const handleCancel = async (bookingId) => {
     setIsLoading(true);
     try {
-      if (onCancelBooking) {
-        await onCancelBooking(bookingId);
-      }
+      await axiosInstance.post(`/bookings/${bookingId}/cancel`, { reason: 'Cancelled by user' });
 
+      // Update local state
       setBookings(prev =>
         prev.map(b =>
           b.id === bookingId ? { ...b, status: 'CANCELLED' } : b
@@ -26,7 +47,9 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
 
       alert('Booking cancelled successfully');
     } catch (error) {
-      alert('Failed to cancel booking');
+      console.error('Error cancelling booking:', error);
+      const message = error?.response?.data?.message || 'Failed to cancel booking';
+      alert(message);
     } finally {
       setIsLoading(false);
       setCancelingId(null);
@@ -41,16 +64,16 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
     { value: 'CANCELLED', label: 'Cancelled' }
   ];
 
+  if (isFetching) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-muted-foreground">Loading your bookings...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">My Bookings</h1>
-        <p className="text-muted-foreground mt-2">
-          View and manage your resource bookings
-        </p>
-      </div>
-
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2">
         {statuses.map((status) => (
@@ -83,12 +106,14 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
           {filteredBookings.map((booking) => (
             <BookingCard
               key={booking.id}
+              id={booking.id}
               resourceName={booking.resourceName}
-              date={booking.date}
+              date={booking.bookingDate}
               startTime={booking.startTime}
               endTime={booking.endTime}
               purpose={booking.purpose}
               status={booking.status}
+              attendees={booking.expectedAttendees}
               onCancel={() => setCancelingId(booking.id)}
             />
           ))}
