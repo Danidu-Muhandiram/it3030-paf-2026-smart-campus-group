@@ -59,6 +59,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        .requestMatchers("/api/v1/tickets/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/assets/**", "/api/locations/**", "/api/uploads/**", "/api/resource-types/**").authenticated()
                         .anyRequest().authenticated()
                 )

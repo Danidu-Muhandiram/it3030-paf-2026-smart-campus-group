@@ -19,5 +19,6 @@ public class TicketResponse {
     private String assetName;
     private String reportedByName;
     private LocalDateTime createdAt;
+    private String rejectionReason;
     private List<String> attachmentUrls;
 }
