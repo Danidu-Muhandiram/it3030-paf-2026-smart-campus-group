@@ -41,8 +41,13 @@ const RequireAuth = ({ children }) => {
     return children
 }
 
-const resolveDefaultDashboardPath = (role) =>
-    String(role || '').toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard'
+const resolveDefaultDashboardPath = (role) => {
+    const r = String(role || '').toUpperCase();
+    if (r === 'ADMIN') return '/admin';
+    if (r === 'TECHNICIAN') return '/technician';
+    return '/dashboard';
+}
+
 
 const RequireAdmin = ({ children }) => {
     const { status, initialized, user } = useAuth()
@@ -74,9 +79,10 @@ const RequireTechnician = ({ children }) => {
         return <Navigate to="/login" replace />
     }
 
-    if (String(user?.role?.name || '').toUpperCase() !== 'TECHNICIAN' && String(user?.role?.name || '').toUpperCase() !== 'ADMIN') {
+    if (String(user?.role || '').toUpperCase() !== 'TECHNICIAN' && String(user?.role || '').toUpperCase() !== 'ADMIN') {
         return <Navigate to="/dashboard" replace />
     }
+
 
     return children
 }
