@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react'
 import { MessageSquare, Paperclip, PlusCircle, X, Download, MoreHorizontal } from 'lucide-react'
+import { TicketComments } from '../components/TicketComments'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
 // workflow shown to end users.
@@ -58,6 +59,9 @@ export const TicketsPage = () => {
         description: t.description,
         priority: t.priority,
         status: t.status,
+        assignedToName: t.assignedToName || '',
+        resolutionNotes: t.resolutionNotes || '',
+        rejectionReason: t.rejectionReason || '',
         preferredContact: t.contact || '',
         location: t.locationName || '',
         resourceLabel: t.assetName || '',
@@ -72,13 +76,6 @@ export const TicketsPage = () => {
         comments: []
     })
 
-    const mapApiComment = (c) => ({
-        id: c.commentId,
-        author: c.authorName || 'Unknown User',
-        message: c.comment || '',
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt
-    })
 
     const getTicketNumericId = (ticketId) => {
         const value = Number(String(ticketId || '').replace('TCK-', ''))
@@ -134,16 +131,11 @@ export const TicketsPage = () => {
     const [filter, setFilter] = useState('ALL')
     const [selectedTicketId, setSelectedTicketId] = useState(null)
     const [lightboxUrl, setLightboxUrl] = useState(null)
-    const [commentInput, setCommentInput] = useState('')
-    const [commentsLoading, setCommentsLoading] = useState(false)
-    const [commentSubmitting, setCommentSubmitting] = useState(false)
-    const [editingCommentId, setEditingCommentId] = useState(null)
-    const [editCommentInput, setEditCommentInput] = useState('')
-    const [commentActionId, setCommentActionId] = useState(null)
-    const [openCommentMenuId, setOpenCommentMenuId] = useState(null)
-    const [commentsError, setCommentsError] = useState('')
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
+    const [isEditingTicket, setIsEditingTicket] = useState(false)
+    const [editTicketData, setEditTicketData] = useState(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const [newTicket, setNewTicket] = useState({
         title: '',
@@ -192,6 +184,10 @@ export const TicketsPage = () => {
         }
         setNewFiles(files.slice(0, 3))
     }
+
+    useEffect(() => {
+        setIsEditingTicket(false);
+    }, [selectedTicketId]);
 
     const handleCreateTicket = async (event) => {
         event.preventDefault()
@@ -250,223 +246,62 @@ export const TicketsPage = () => {
         }
     }
 
-    const fetchTicketComments = async (ticketId) => {
-        const numericTicketId = getTicketNumericId(ticketId)
-        if (!numericTicketId) {
-            return
-        }
-
-        setCommentsLoading(true)
-        setCommentsError('')
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments`, {
-                credentials: 'include'
-            })
-            const data = await response.json()
-
-            if (response.ok && data.success) {
-                const commentList = (data.data || []).map(mapApiComment)
-                setTickets((prev) => prev.map((ticket) => {
-                    if (ticket.id !== ticketId) {
-                        return ticket
-                    }
-                    return {
-                        ...ticket,
-                        comments: commentList
-                    }
-                }))
-            } else {
-                setCommentsError(data.message || 'Failed to load comments')
-            }
-        } catch (err) {
-            console.error('Failed to fetch comments', err)
-            setCommentsError('Network error - could not load comments')
-        } finally {
-            setCommentsLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        if (!selectedTicketId) {
-            setCommentsError('')
-            setEditingCommentId(null)
-            setEditCommentInput('')
-            setOpenCommentMenuId(null)
-            return
-        }
-        setEditingCommentId(null)
-        setEditCommentInput('')
-        setOpenCommentMenuId(null)
-        fetchTicketComments(selectedTicketId)
-    }, [selectedTicketId])
-
-    const handleAddComment = async (event) => {
+    const handleUpdateTicket = async (event) => {
         event.preventDefault()
-        if (!selectedTicket || !commentInput.trim() || commentSubmitting) {
-            return
-        }
+        if (!editTicketData) return
 
-        const numericTicketId = getTicketNumericId(selectedTicket.id)
-        if (!numericTicketId) {
-            setCommentsError('Invalid ticket ID')
-            return
-        }
-
-        setCommentSubmitting(true)
-        setCommentsError('')
+        const numericId = getTicketNumericId(editTicketData.id)
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({ comment: commentInput.trim() })
-            })
-            const data = await response.json()
-
-            if (!response.ok || !data.success) {
-                setCommentsError(data.message || 'Failed to post comment')
-                return
-            }
-
-            const savedComment = mapApiComment(data.data)
-
-            setTickets((prev) => prev.map((ticket) => {
-                if (ticket.id !== selectedTicket.id) {
-                    return ticket
-                }
-                return {
-                    ...ticket,
-                    comments: [...ticket.comments, savedComment]
-                }
-            }))
-            setCommentInput('')
-        } catch (error) {
-            console.error('Failed to post comment', error)
-            setCommentsError('Network error - could not post comment')
-        } finally {
-            setCommentSubmitting(false)
-        }
-    }
-
-    const handleStartEditComment = (comment) => {
-        setCommentsError('')
-        setOpenCommentMenuId(null)
-        setEditingCommentId(comment.id)
-        setEditCommentInput(comment.message)
-    }
-
-    const handleToggleCommentMenu = (commentId) => {
-        setOpenCommentMenuId((prev) => (prev === commentId ? null : commentId))
-    }
-
-    const handleCancelEditComment = () => {
-        setEditingCommentId(null)
-        setEditCommentInput('')
-    }
-
-    const handleSaveEditComment = async (event) => {
-        event.preventDefault()
-        if (!selectedTicket || !editingCommentId || !editCommentInput.trim()) {
-            return
-        }
-
-        const numericTicketId = getTicketNumericId(selectedTicket.id)
-        if (!numericTicketId) {
-            setCommentsError('Invalid ticket ID')
-            return
-        }
-
-        setCommentActionId(editingCommentId)
-        setCommentsError('')
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments/${editingCommentId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericId}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ comment: editCommentInput.trim() })
+                body: JSON.stringify({
+                    title: editTicketData.title,
+                    description: editTicketData.description,
+                    priority: editTicketData.priority,
+                    assetId: editTicketData.resourceId,
+                    contact: editTicketData.preferredContact
+                })
             })
             const data = await response.json()
-
-            if (!response.ok || !data.success) {
-                setCommentsError(data.message || 'Failed to update comment')
-                return
+            if (response.ok && data.success) {
+                await fetchMyTickets()
+                setIsEditingTicket(false)
+            } else {
+                alert(data.message || 'Failed to update ticket')
             }
-
-            const updatedComment = mapApiComment(data.data)
-            setTickets((prev) => prev.map((ticket) => {
-                if (ticket.id !== selectedTicket.id) {
-                    return ticket
-                }
-                return {
-                    ...ticket,
-                    comments: ticket.comments.map((comment) =>
-                        comment.id === updatedComment.id ? updatedComment : comment
-                    )
-                }
-            }))
-
-            setEditingCommentId(null)
-            setEditCommentInput('')
-            setOpenCommentMenuId(null)
         } catch (error) {
-            console.error('Failed to update comment', error)
-            setCommentsError('Network error - could not update comment')
-        } finally {
-            setCommentActionId(null)
+            console.error('Update error', error)
+            alert('Network error')
         }
     }
 
-    const handleDeleteComment = async (commentId) => {
-        if (!selectedTicket) {
-            return
-        }
-
-        const numericTicketId = getTicketNumericId(selectedTicket.id)
-        if (!numericTicketId) {
-            setCommentsError('Invalid ticket ID')
-            return
-        }
-
-        setCommentActionId(commentId)
-        setCommentsError('')
-        setOpenCommentMenuId(null)
+    const handleDeleteTicket = async (ticketId) => {
+        if (!window.confirm('Are you sure you want to delete this closed ticket? This action cannot be undone.')) return
+        
+        const numericId = getTicketNumericId(ticketId)
+        setIsDeleting(true)
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericTicketId}/comments/${commentId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericId}`, {
                 method: 'DELETE',
                 credentials: 'include'
             })
             const data = await response.json()
-
-            if (!response.ok || !data.success) {
-                setCommentsError(data.message || 'Failed to delete comment')
-                return
-            }
-
-            setTickets((prev) => prev.map((ticket) => {
-                if (ticket.id !== selectedTicket.id) {
-                    return ticket
-                }
-                return {
-                    ...ticket,
-                    comments: ticket.comments.filter((comment) => comment.id !== commentId)
-                }
-            }))
-
-            if (editingCommentId === commentId) {
-                setEditingCommentId(null)
-                setEditCommentInput('')
+            if (response.ok && data.success) {
+                setSelectedTicketId(null)
+                await fetchMyTickets()
+            } else {
+                alert(data.message || 'Failed to delete ticket')
             }
         } catch (error) {
-            console.error('Failed to delete comment', error)
-            setCommentsError('Network error - could not delete comment')
+            console.error('Delete error', error)
+            alert('Network error')
         } finally {
-            setCommentActionId(null)
+            setIsDeleting(false)
         }
     }
+
 
     return (
         <div className="space-y-6 pb-8">
@@ -684,14 +519,116 @@ export const TicketsPage = () => {
                                         <h3 className="text-base font-semibold text-text-main">{selectedTicket.title}</h3>
                                         <p className="text-xs text-text-light">{selectedTicket.id} • {selectedTicket.location || 'No location set'}</p>
                                     </div>
-                                    <span className={`text-xs px-2.5 py-1 rounded border w-fit ${STATUS_STYLES[selectedTicket.status]}`}>
-                                        {selectedTicket.status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {selectedTicket.status === 'OPEN' && !isEditingTicket && (
+                                            <button 
+                                                onClick={() => {
+                                                    setIsEditingTicket(true);
+                                                    setEditTicketData({ ...selectedTicket });
+                                                }}
+                                                className="px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10 rounded border border-primary/20"
+                                            >
+                                                EDIT TICKET
+                                            </button>
+                                        )}
+                                        {selectedTicket.status === 'CLOSED' && (
+                                            <button 
+                                                onClick={() => handleDeleteTicket(selectedTicket.id)}
+                                                disabled={isDeleting}
+                                                className="px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded border border-rose-100"
+                                            >
+                                                {isDeleting ? 'DELETING...' : 'DELETE TICKET'}
+                                            </button>
+                                        )}
+                                        <span className={`text-xs px-2.5 py-1 rounded border w-fit ${STATUS_STYLES[selectedTicket.status]}`}>
+                                            {selectedTicket.status}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                    <p className="text-sm text-text-muted">{selectedTicket.description}</p>
-                                </div>
+                                {isEditingTicket ? (
+                                    <form onSubmit={handleUpdateTicket} className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/10">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Title</label>
+                                            <input 
+                                                value={editTicketData.title}
+                                                onChange={(e) => setEditTicketData({...editTicketData, title: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Description</label>
+                                            <textarea 
+                                                value={editTicketData.description}
+                                                onChange={(e) => setEditTicketData({...editTicketData, description: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                rows={3}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Priority</label>
+                                                <select 
+                                                    value={editTicketData.priority}
+                                                    onChange={(e) => setEditTicketData({...editTicketData, priority: e.target.value})}
+                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white"
+                                                >
+                                                    <option value="LOW">Low</option>
+                                                    <option value="MEDIUM">Medium</option>
+                                                    <option value="HIGH">High</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Contact</label>
+                                                <input 
+                                                    value={editTicketData.preferredContact}
+                                                    onChange={(e) => setEditTicketData({...editTicketData, preferredContact: e.target.value})}
+                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setIsEditingTicket(false)}
+                                                className="px-4 py-2 text-xs font-bold text-text-muted hover:text-text-main transition-colors"
+                                            >
+                                                CANCEL
+                                            </button>
+                                            <button 
+                                                type="submit"
+                                                className="px-6 py-2 text-xs font-bold bg-primary text-white rounded-lg hover:bg-primary-dark transition-all"
+                                            >
+                                                SAVE CHANGES
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                                        <p className="text-sm text-text-muted">{selectedTicket.description}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.assignedToName && (
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-emerald-700">Assigned Technician</p>
+                                        <p className="text-sm text-emerald-800 mt-0.5">{selectedTicket.assignedToName}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.resolutionNotes && (
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-emerald-700">Resolution Update</p>
+                                        <p className="text-sm text-emerald-800 mt-0.5">{selectedTicket.resolutionNotes}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.rejectionReason && (
+                                    <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-rose-700">Rejection Reason</p>
+                                        <p className="text-sm text-rose-800 mt-0.5">{selectedTicket.rejectionReason}</p>
+                                    </div>
+                                )}
 
                                 <div>
                                     <h4 className="text-sm font-semibold text-text-main flex items-center gap-2">
@@ -728,7 +665,7 @@ export const TicketsPage = () => {
                                                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-gray-200 hover:border-primary hover:text-primary text-xs text-text-muted transition-colors"
                                                     >
                                                         <Download size={12} />
-                                                        <span className="max-w-[120px] truncate">{file.name}</span>
+                                                        <span className="max-w-30 truncate">{file.name}</span>
                                                     </a>
                                                 )
                                             ))}
@@ -736,113 +673,11 @@ export const TicketsPage = () => {
                                     )}
                                 </div>
 
-                                <div>
-                                    <h4 className="text-sm font-semibold text-text-main flex items-center gap-2">
-                                        <MessageSquare size={15} /> Comments
-                                    </h4>
-
-                                    <div className="mt-2 space-y-2 min-h-40 max-h-56 overflow-y-auto pr-1">
-                                        {commentsLoading && (
-                                            <p className="text-xs text-text-light">Loading comments...</p>
-                                        )}
-                                        {!commentsLoading && selectedTicket.comments.length === 0 && (
-                                            <p className="text-xs text-text-light">No comments yet.</p>
-                                        )}
-                                        {selectedTicket.comments.map((comment) => (
-                                            <div key={comment.id} className="bg-white border border-gray-200 rounded-md p-2.5">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-xs font-semibold text-text-main">{comment.author}</span>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[11px] text-text-light">
-                                                            {formatDateTime(comment.createdAt)}
-                                                            {comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' • edited' : ''}
-                                                        </span>
-                                                        {editingCommentId !== comment.id && (
-                                                            <div className="relative">
-                                                                <button
-                                                                    type="button"
-                                                                    aria-label="Comment actions"
-                                                                    onClick={() => handleToggleCommentMenu(comment.id)}
-                                                                    disabled={commentActionId === comment.id}
-                                                                    className="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-light hover:bg-gray-100 hover:text-text-main"
-                                                                >
-                                                                    <MoreHorizontal size={14} />
-                                                                </button>
-
-                                                                {openCommentMenuId === comment.id && (
-                                                                    <div className="absolute right-0 mt-1 w-28 rounded-md border border-gray-200 bg-white py-1 shadow-lg z-10">
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleStartEditComment(comment)}
-                                                                            className="block w-full px-3 py-1.5 text-left text-xs text-text-main hover:bg-gray-50"
-                                                                        >
-                                                                            Edit
-                                                                        </button>
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => handleDeleteComment(comment.id)}
-                                                                            className="block w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50"
-                                                                        >
-                                                                            Delete
-                                                                        </button>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                {editingCommentId === comment.id ? (
-                                                    <form onSubmit={handleSaveEditComment} className="mt-2 space-y-2">
-                                                        <textarea
-                                                            rows={3}
-                                                            value={editCommentInput}
-                                                            onChange={(event) => setEditCommentInput(event.target.value)}
-                                                            className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                                            disabled={commentActionId === comment.id}
-                                                        />
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                type="submit"
-                                                                disabled={commentActionId === comment.id || !editCommentInput.trim()}
-                                                                className="px-3 py-1.5 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary-hover"
-                                                            >
-                                                                {commentActionId === comment.id ? 'Saving...' : 'Save'}
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleCancelEditComment}
-                                                                disabled={commentActionId === comment.id}
-                                                                className="px-3 py-1.5 rounded-md border border-gray-200 text-xs text-text-muted hover:border-gray-300"
-                                                            >
-                                                                Cancel
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                ) : (
-                                                    <p className="text-sm text-text-muted mt-1">{comment.message}</p>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {commentsError && <p className="text-xs text-red-600 mt-2">{commentsError}</p>}
-
-                                    <form onSubmit={handleAddComment} className="mt-3 flex gap-2">
-                                        <input
-                                            value={commentInput}
-                                            onChange={(event) => setCommentInput(event.target.value)}
-                                            placeholder="Add a comment..."
-                                            disabled={commentSubmitting}
-                                            className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                        />
-                                        <button
-                                            type="submit"
-                                            disabled={commentSubmitting}
-                                            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover"
-                                        >
-                                            {commentSubmitting ? 'Posting...' : 'Post'}
-                                        </button>
-                                    </form>
+                                <div className="pt-4 border-t border-gray-100">
+                                    <TicketComments 
+                                        ticketId={getTicketNumericId(selectedTicket.id)} 
+                                        ticketStatus={selectedTicket.status}
+                                    />
                                 </div>
                             </div>
                         )}

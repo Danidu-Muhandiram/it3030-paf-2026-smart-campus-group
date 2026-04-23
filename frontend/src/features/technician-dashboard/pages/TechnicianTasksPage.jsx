@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Ticket, Clock, CheckCircle, MapPin, Calendar, User, Phone, Paperclip, Download, ChevronRight } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Ticket, Clock, CheckCircle, MapPin, Calendar, User, Phone, Paperclip, Download } from 'lucide-react';
+import { getMyAssignedTickets, resolveTicket, startTicketProgress } from '../services/technicianTicketService';
+import { TicketComments } from '../../tickets/components/TicketComments';
 
 const statusStyles = {
     OPEN: 'bg-sky-50 text-sky-700 border-sky-200',
@@ -15,39 +17,97 @@ const priorityStyles = {
     LOW: 'text-emerald-600 bg-emerald-50'
 };
 
+const formatDateTime = (value) => {
+    if (!value) return 'N/A';
+    return new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085';
+
 export const TechnicianTasksPage = () => {
-    // Mock data for UI demonstration
-    const [tasks] = useState([
-        {
-            ticketId: 101,
-            title: 'AC leaking in Lab 302',
-            description: 'Water is dripping from the indoor unit, possibly a clogged drain pipe.',
-            priority: 'HIGH',
-            status: 'IN_PROGRESS',
-            locationName: 'Engineering Building - 3rd Floor',
-            assetName: 'LG Split AC',
-            reportedByName: 'John Doe',
-            contact: '+94 77 123 4567',
-            createdAt: '2026-04-22T08:30:00Z',
-            attachmentUrls: []
-        },
-        {
-            ticketId: 105,
-            title: 'Projector not turning on',
-            description: 'Main lecture hall projector is not responding to remote or manual power button.',
-            priority: 'MEDIUM',
-            status: 'OPEN',
-            locationName: 'Main Auditorium',
-            assetName: 'Epson Projector',
-            reportedByName: 'Jane Smith',
-            contact: '+94 71 987 6543',
-            createdAt: '2026-04-23T09:15:00Z',
-            attachmentUrls: []
-        }
-    ]);
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [actionLoading, setActionLoading] = useState(false);
+    const [resolutionNotes, setResolutionNotes] = useState('');
 
     const [selectedTaskId, setSelectedTaskId] = useState(null);
-    const selectedTask = tasks.find(t => t.ticketId === selectedTaskId);
+    const selectedTask = useMemo(() => tasks.find(t => t.ticketId === selectedTaskId) || null, [tasks, selectedTaskId]);
+
+    const fetchTasks = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await getMyAssignedTickets();
+            if (response.success) {
+                setTasks(response.data || []);
+            } else {
+                setError(response.message || 'Failed to load assigned tickets');
+            }
+        } catch (err) {
+            console.error('Error fetching technician tasks:', err);
+            setError('Network error: Could not load tasks');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    useEffect(() => {
+        if (selectedTask?.resolutionNotes) {
+            setResolutionNotes(selectedTask.resolutionNotes);
+            return;
+        }
+        setResolutionNotes('');
+    }, [selectedTask?.ticketId, selectedTask?.resolutionNotes]);
+
+    const updateTaskInState = (updatedTask) => {
+        setTasks((prev) => prev.map((task) => task.ticketId === updatedTask.ticketId ? updatedTask : task));
+    };
+
+    const handleStartProgress = async () => {
+        if (!selectedTask) return;
+
+        setActionLoading(true);
+        try {
+            const response = await startTicketProgress(selectedTask.ticketId);
+            if (response.success) {
+                updateTaskInState(response.data);
+            } else {
+                setError(response.message || 'Failed to update task status');
+            }
+        } catch (err) {
+            console.error('Error starting ticket progress:', err);
+            setError('Could not update task status');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleResolve = async () => {
+        if (!selectedTask || !resolutionNotes.trim()) {
+            return;
+        }
+
+        setActionLoading(true);
+        setError('');
+        try {
+            const response = await resolveTicket(selectedTask.ticketId, resolutionNotes.trim());
+            if (response.success) {
+                updateTaskInState(response.data);
+            } else {
+                setError(response.message || 'Failed to resolve task');
+            }
+        } catch (err) {
+            console.error('Error resolving ticket:', err);
+            setError('Could not resolve task');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     return (
         <div className="space-y-6 pb-10">
@@ -55,6 +115,12 @@ export const TechnicianTasksPage = () => {
                 <h1 className="text-2xl font-bold text-text-main">Assigned Tasks</h1>
                 <p className="mt-1 text-text-muted">Manage and resolve maintenance requests assigned to you.</p>
             </div>
+
+            {error && (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {error}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Task List */}
@@ -65,8 +131,12 @@ export const TechnicianTasksPage = () => {
                                 My Tasks ({tasks.length})
                             </span>
                         </div>
-                        <div className="divide-y divide-gray-50">
-                            {tasks.map((task) => (
+                        <div className="divide-y divide-gray-50 max-h-[calc(100vh-280px)] overflow-y-auto">
+                            {loading ? (
+                                <div className="p-10 text-center text-text-muted">Loading...</div>
+                            ) : tasks.length === 0 ? (
+                                <div className="p-10 text-center text-text-muted">No assigned tasks yet</div>
+                            ) : tasks.map((task) => (
                                 <button
                                     key={task.ticketId}
                                     onClick={() => setSelectedTaskId(task.ticketId)}
@@ -81,6 +151,7 @@ export const TechnicianTasksPage = () => {
                                     <h3 className="text-sm font-semibold text-text-main line-clamp-1">{task.title}</h3>
                                     <div className="flex items-center gap-3 text-[11px] text-text-light">
                                         <span className="flex items-center gap-1"><MapPin size={12} /> {task.locationName}</span>
+                                        <span className="flex items-center gap-1"><Calendar size={12} /> {formatDateTime(task.createdAt)}</span>
                                     </div>
                                 </button>
                             ))}
@@ -116,6 +187,7 @@ export const TechnicianTasksPage = () => {
                                     </div>
                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-1 text-sm text-text-muted">
                                         <span className="font-mono text-primary font-semibold">TCK-{selectedTask.ticketId}</span>
+                                        <span className="flex items-center gap-1.5"><Calendar size={14} /> {formatDateTime(selectedTask.createdAt)}</span>
                                         <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${priorityStyles[selectedTask.priority]}`}>
                                             {selectedTask.priority} Priority
                                         </span>
@@ -146,19 +218,78 @@ export const TechnicianTasksPage = () => {
                                     </div>
                                 </div>
 
+                                <div className="space-y-3">
+                                    <p className="text-xs font-bold text-text-light uppercase tracking-wider flex items-center gap-2">
+                                        <Paperclip size={14} /> Attachments
+                                    </p>
+                                    {!selectedTask.attachmentUrls || selectedTask.attachmentUrls.length === 0 ? (
+                                        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-2 text-sm text-text-muted">
+                                            No attachments.
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-3">
+                                            {selectedTask.attachmentUrls.map((url, idx) => {
+                                                const fullUrl = `${API_BASE_URL}${url}`;
+                                                const fileName = url.split('/').pop();
+                                                return (
+                                                    <a
+                                                        key={`${url}-${idx}`}
+                                                        href={fullUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs text-text-main hover:border-primary transition-colors"
+                                                    >
+                                                        <Download size={14} className="text-primary" />
+                                                        <span className="max-w-45 truncate">{fileName}</span>
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="border-t border-gray-100 pt-6">
+                                    <TicketComments 
+                                        ticketId={selectedTask.ticketId} 
+                                        ticketStatus={selectedTask.status}
+                                    />
+                                </div>
+
                                 {/* Action Buttons */}
                                 <div className="pt-6 border-t border-gray-100 space-y-4">
                                     <p className="text-xs font-bold text-text-light uppercase tracking-wider">Task Actions</p>
                                     <div className="flex flex-wrap gap-3">
                                         {selectedTask.status === 'OPEN' && (
-                                            <button className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 transition-colors">
+                                            <button
+                                                onClick={handleStartProgress}
+                                                disabled={actionLoading}
+                                                className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-lg font-bold hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                            >
                                                 <Clock size={18} /> Start Progress
                                             </button>
                                         )}
                                         {selectedTask.status === 'IN_PROGRESS' && (
-                                            <button className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 transition-colors">
-                                                <CheckCircle size={18} /> Mark as Resolved
-                                            </button>
+                                            <div className="w-full space-y-3">
+                                                <textarea
+                                                    value={resolutionNotes}
+                                                    onChange={(e) => setResolutionNotes(e.target.value)}
+                                                    rows={4}
+                                                    placeholder="Add what was fixed before marking as resolved..."
+                                                    className="w-full rounded-lg border border-gray-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                                />
+                                                <button
+                                                    onClick={handleResolve}
+                                                    disabled={actionLoading || !resolutionNotes.trim()}
+                                                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                                                >
+                                                    <CheckCircle size={18} /> Mark as Resolved
+                                                </button>
+                                            </div>
+                                        )}
+                                        {(selectedTask.status === 'RESOLVED' || selectedTask.status === 'CLOSED' || selectedTask.status === 'REJECTED') && (
+                                            <div className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-text-muted">
+                                                {selectedTask.status === 'RESOLVED' && selectedTask.resolutionNotes ? selectedTask.resolutionNotes : 'This task is finalized and no further technician action is required.'}
+                                            </div>
                                         )}
                                     </div>
                                 </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Filter, Ticket, CheckCircle, XCircle, Clock, Check, AlertCircle, User, MapPin, Phone, Calendar, Paperclip, Download } from 'lucide-react';
-import { getAllTickets, updateTicketStatus } from '../services/adminTicketService';
+import { assignTicket, getAllTickets, updateTicketStatus } from '../services/adminTicketService';
+import { TicketComments } from '../../tickets/components/TicketComments';
 
 const statusStyles = {
     OPEN: 'bg-sky-50 text-sky-700 border-sky-200',
@@ -35,12 +36,14 @@ export const AdminTicketsPage = () => {
 
     const fetchTickets = async () => {
         setLoading(true);
+        setError('');
         try {
-            const response = await getAllTickets();
-            if (response.success) {
-                setTickets(response.data || []);
+            const ticketsResponse = await getAllTickets();
+
+            if (ticketsResponse.success) {
+                setTickets(ticketsResponse.data || []);
             } else {
-                setError(response.message || 'Failed to fetch tickets');
+                setError(ticketsResponse.message || 'Failed to fetch tickets');
             }
         } catch (err) {
             console.error('Error fetching tickets:', err);
@@ -85,6 +88,27 @@ export const AdminTicketsPage = () => {
         } catch (err) {
             console.error('Error updating status:', err);
             alert('Error updating status');
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleAssignTechnician = async () => {
+        if (!selectedTicketId) {
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const response = await assignTicket(selectedTicketId);
+            if (response.success) {
+                setTickets((prev) => prev.map((t) => t.ticketId === selectedTicketId ? response.data : t));
+            } else {
+                alert(response.message || 'Failed to assign technician');
+            }
+        } catch (err) {
+            console.error('Error assigning technician:', err);
+            alert('Error assigning technician');
         } finally {
             setActionLoading(false);
         }
@@ -254,7 +278,7 @@ export const AdminTicketsPage = () => {
                                                         ) : (
                                                             <a href={fullUrl} download className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200 text-xs text-text-main hover:border-primary transition-colors">
                                                                 <Download size={14} className="text-primary" />
-                                                                <span className="max-w-[100px] truncate">{fileName}</span>
+                                                                <span className="max-w-25 truncate">{fileName}</span>
                                                             </a>
                                                         )}
                                                     </div>
@@ -275,6 +299,24 @@ export const AdminTicketsPage = () => {
                                         </div>
                                     </div>
                                 )}
+
+                                {selectedTicket.resolutionNotes && (
+                                    <div className="space-y-3 border-t border-gray-50 pt-6">
+                                        <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-4">
+                                            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                                <CheckCircle size={14} /> Resolution Notes
+                                            </p>
+                                            <p className="text-sm text-emerald-800">{selectedTicket.resolutionNotes}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="border-t border-gray-50 pt-6">
+                                    <TicketComments 
+                                        ticketId={selectedTicket.ticketId} 
+                                        ticketStatus={selectedTicket.status}
+                                    />
+                                </div>
                             </div>
 
                             {/* Detail Actions */}
@@ -307,32 +349,42 @@ export const AdminTicketsPage = () => {
                                             </button>
                                         </div>
                                     </div>
-                                ) : selectedTicket.status === 'REJECTED' || selectedTicket.status === 'IN_PROGRESS' || selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'CLOSED' ? (
+                                ) : selectedTicket.status === 'REJECTED' || selectedTicket.status === 'CLOSED' ? (
                                     <div className="flex items-center gap-2 text-text-muted py-2">
                                         <CheckCircle size={16} />
                                         <span className="text-sm font-medium">
-                                            {selectedTicket.status === 'REJECTED' ? 'This ticket has been rejected.' : 'This ticket is being processed or is finalized.'}
+                                            {selectedTicket.status === 'REJECTED' ? 'This ticket has been rejected.' : 'This ticket has been closed.'}
                                         </span>
                                     </div>
-                                ) : (
+                                ) : selectedTicket.status === 'RESOLVED' ? (
                                     <div className="flex flex-wrap items-center gap-4">
+                                        <button
+                                            onClick={() => handleUpdateStatus('CLOSED')}
+                                            disabled={actionLoading}
+                                            className="px-6 py-2.5 bg-slate-700 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors flex items-center gap-2"
+                                        >
+                                            <Check size={18} /> Close Ticket
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
                                         {selectedTicket.status === 'OPEN' && (
-                                            <>
-                                                <button 
-                                                    onClick={() => handleUpdateStatus('IN_PROGRESS')}
-                                                    disabled={actionLoading}
-                                                    className="px-6 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 transition-colors flex items-center gap-2"
-                                                >
-                                                    <Clock size={18} /> Approve & Assign
-                                                </button>
-                                                
-                                                <button 
-                                                    onClick={() => setIsRejecting(true)}
-                                                    className="px-6 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors flex items-center gap-2"
-                                                >
-                                                    <XCircle size={18} /> Reject
-                                                </button>
-                                            </>
+                                            <button
+                                                onClick={handleAssignTechnician}
+                                                disabled={actionLoading}
+                                                className="px-6 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-bold hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Clock size={18} /> Assign Technician
+                                            </button>
+                                        )}
+
+                                        {selectedTicket.status === 'OPEN' && (
+                                            <button
+                                                onClick={() => setIsRejecting(true)}
+                                                className="px-6 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-lg text-sm font-bold hover:bg-rose-50 transition-colors flex items-center gap-2"
+                                            >
+                                                <XCircle size={18} /> Reject
+                                            </button>
                                         )}
                                     </div>
                                 )}

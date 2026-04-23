@@ -10,5 +10,7 @@ import java.util.List;
 public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByReportedByEmailOrderByCreatedAtDesc(String email);
+    List<Ticket> findByAssignedToEmailOrderByCreatedAtDesc(String email);
+    List<Ticket> findByStatusInOrderByCreatedAtDesc(List<String> statuses);
     List<Ticket> findAllByOrderByCreatedAtDesc();
 }
