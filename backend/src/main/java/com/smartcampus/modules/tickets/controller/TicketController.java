@@ -103,4 +103,33 @@ public class TicketController {
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
         }
     }
+
+    // Admin Endpoints
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<ApiResponse<List<TicketListItem>>> getAllTicketsAdmin() {
+        try {
+            List<TicketListItem> tickets = ticketService.getAllTickets();
+            return ResponseEntity.ok(new ApiResponse<>(true, "All tickets fetched successfully", tickets));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/admin/{ticketId}/status")
+    public ResponseEntity<ApiResponse<TicketListItem>> updateTicketStatus(
+            @PathVariable Long ticketId,
+            @Valid @RequestBody com.smartcampus.modules.tickets.dto.TicketStatusUpdateRequest request) {
+        try {
+            TicketListItem ticket = ticketService.updateTicketStatus(
+                    ticketId, 
+                    request.getStatus(), 
+                    null, 
+                    request.getRejectionReason()
+            );
+            return ResponseEntity.ok(new ApiResponse<>(true, "Ticket status updated successfully", ticket));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
 }

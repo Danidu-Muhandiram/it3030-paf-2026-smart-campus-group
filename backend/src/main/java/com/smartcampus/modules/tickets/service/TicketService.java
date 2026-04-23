@@ -33,155 +33,202 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TicketService {
 
-    private final TicketRepository ticketRepository;
+        private final TicketRepository ticketRepository;
         private final TicketCommentRepository ticketCommentRepository;
-    private final AssetRepository assetRepository;
-    private final UserRepository userRepository;
+        private final AssetRepository assetRepository;
+        private final UserRepository userRepository;
 
-    @Value("${app.upload.dir:uploads}")
-    private String uploadDir;
+        @Value("${app.upload.dir:uploads}")
+        private String uploadDir;
 
-    @Transactional
-    public TicketResponse createTicket(String email, String title, String description, String priority,
-                                       Long assetId, String contact, MultipartFile[] files) {
+        @Transactional
+        public TicketResponse createTicket(String email, String title, String description, String priority,
+                        Long assetId, String contact, MultipartFile[] files) {
 
-        User reportedBy = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                User reportedBy = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Asset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new RuntimeException("Asset not found"));
+                Asset asset = assetRepository.findById(assetId)
+                                .orElseThrow(() -> new RuntimeException("Asset not found"));
 
-        Ticket ticket = Ticket.builder()
-                .reportedBy(reportedBy)
-                .asset(asset)
-                .title(title)
-                .description(description)
-                .priority(priority == null ? "MEDIUM" : priority.toUpperCase())
-                .contact(contact)
-                .status("OPEN")
-                .attachments(new ArrayList<>())
-                .build();
+                Ticket ticket = Ticket.builder()
+                                .reportedBy(reportedBy)
+                                .asset(asset)
+                                .title(title)
+                                .description(description)
+                                .priority(priority == null ? "MEDIUM" : priority.toUpperCase())
+                                .contact(contact)
+                                .status("OPEN")
+                                .attachments(new ArrayList<>())
+                                .build();
 
-        if (files != null && files.length > 0) {
-            Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
-            try {
-                Files.createDirectories(uploadPath);
-            } catch (IOException e) {
-                log.error("Could not create upload directory", e);
-            }
+                if (files != null && files.length > 0) {
+                        Path uploadPath = Paths.get(uploadDir).toAbsolutePath();
+                        try {
+                                Files.createDirectories(uploadPath);
+                        } catch (IOException e) {
+                                log.error("Could not create upload directory", e);
+                        }
 
-            for (MultipartFile file : files) {
-                if (file.isEmpty()) continue;
+                        for (MultipartFile file : files) {
+                                if (file.isEmpty())
+                                        continue;
 
-                String originalFilename = file.getOriginalFilename();
-                String extension = (originalFilename != null && originalFilename.contains("."))
-                        ? originalFilename.substring(originalFilename.lastIndexOf('.'))
-                        : "";
-                String filename = UUID.randomUUID() + extension;
+                                String originalFilename = file.getOriginalFilename();
+                                String extension = (originalFilename != null && originalFilename.contains("."))
+                                                ? originalFilename.substring(originalFilename.lastIndexOf('.'))
+                                                : "";
+                                String filename = UUID.randomUUID() + extension;
 
-                try {
-                    Path destination = uploadPath.resolve(filename);
-                    file.transferTo(destination);
+                                try {
+                                        Path destination = uploadPath.resolve(filename);
+                                        file.transferTo(destination);
 
-                    TicketAttachment attachment = TicketAttachment.builder()
-                            .ticket(ticket)
-                            .fileName(originalFilename)
-                            .filePath("/uploads/" + filename)
-                            .fileType(file.getContentType())
-                            .uploadedBy(reportedBy)
-                            .build();
+                                        TicketAttachment attachment = TicketAttachment.builder()
+                                                        .ticket(ticket)
+                                                        .fileName(originalFilename)
+                                                        .filePath("/uploads/" + filename)
+                                                        .fileType(file.getContentType())
+                                                        .uploadedBy(reportedBy)
+                                                        .build();
 
-                    ticket.getAttachments().add(attachment);
-                } catch (IOException e) {
-                    log.error("Failed to store file: " + originalFilename, e);
+                                        ticket.getAttachments().add(attachment);
+                                } catch (IOException e) {
+                                        log.error("Failed to store file: " + originalFilename, e);
+                                }
+                        }
                 }
-            }
+
+                Ticket savedTicket = ticketRepository.save(ticket);
+
+                return TicketResponse.builder()
+                                .ticketId(savedTicket.getId())
+                                .title(savedTicket.getTitle())
+                                .description(savedTicket.getDescription())
+                                .priority(savedTicket.getPriority())
+                                .status(savedTicket.getStatus())
+                                .contact(savedTicket.getContact())
+                                .assetId(asset.getId())
+                                .assetName(asset.getName())
+                                .reportedByName(reportedBy.getFirstName() + " " + reportedBy.getLastName())
+                                .createdAt(savedTicket.getCreatedAt())
+                                .attachmentUrls(savedTicket.getAttachments().stream()
+                                                .map(TicketAttachment::getFilePath)
+                                                .collect(Collectors.toList()))
+                                .build();
         }
 
-        Ticket savedTicket = ticketRepository.save(ticket);
+        /**
+         * Returns all tickets for administrators, newest first.
+         */
+        @Transactional(readOnly = true)
+        public List<TicketListItem> getAllTickets() {
+                return ticketRepository.findAllByOrderByCreatedAtDesc()
+                                .stream()
+                                .map(this::mapToListItem)
+                                .collect(Collectors.toList());
+        }
 
-        return TicketResponse.builder()
-                .ticketId(savedTicket.getId())
-                .title(savedTicket.getTitle())
-                .description(savedTicket.getDescription())
-                .priority(savedTicket.getPriority())
-                .status(savedTicket.getStatus())
-                .contact(savedTicket.getContact())
-                .assetId(asset.getId())
-                .assetName(asset.getName())
-                .reportedByName(reportedBy.getFirstName() + " " + reportedBy.getLastName())
-                .createdAt(savedTicket.getCreatedAt())
-                .attachmentUrls(savedTicket.getAttachments().stream()
-                        .map(TicketAttachment::getFilePath)
-                        .collect(Collectors.toList()))
-                .build();
-    }
+        /**
+         * Returns all tickets submitted by the given user, newest first.
+         */
+        @Transactional(readOnly = true)
+        public List<TicketListItem> getMyTickets(String email) {
+                return ticketRepository.findByReportedByEmailOrderByCreatedAtDesc(email)
+                                .stream()
+                                .map(this::mapToListItem)
+                                .collect(Collectors.toList());
+        }
 
-    /**
-     * Returns all tickets submitted by the given user, newest first.
-     */
-    @Transactional(readOnly = true)
-    public List<TicketListItem> getMyTickets(String email) {
-        return ticketRepository.findByReportedByEmailOrderByCreatedAtDesc(email)
-                .stream()
-                .map(ticket -> {
-                    String locationName = (ticket.getAsset() != null
-                            && ticket.getAsset().getLocation() != null)
-                            ? ticket.getAsset().getLocation().getName()
-                            : "";
-                    String assetName = ticket.getAsset() != null ? ticket.getAsset().getName() : "";
-                    Long assetId = ticket.getAsset() != null ? ticket.getAsset().getId() : null;
+        @Transactional
+        public TicketListItem updateTicketStatus(Long ticketId, String status, String notes, String rejectionReason) {
+                Ticket ticket = ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
-                    return TicketListItem.builder()
-                            .ticketId(ticket.getId())
-                            .title(ticket.getTitle())
-                            .description(ticket.getDescription())
-                            .priority(ticket.getPriority())
-                            .status(ticket.getStatus())
-                            .contact(ticket.getContact())
-                            .assetId(assetId)
-                            .assetName(assetName)
-                            .locationName(locationName)
-                            .reportedByName(
-                                    ticket.getReportedBy().getFirstName() + " " + ticket.getReportedBy().getLastName())
-                            .createdAt(ticket.getCreatedAt())
-                            .attachmentUrls(ticket.getAttachments().stream()
-                                    .map(TicketAttachment::getFilePath)
-                                    .collect(Collectors.toList()))
-                            .build();
-                })
-                .collect(Collectors.toList());
-    }
+                String oldStatus = ticket.getStatus();
+                String newStatus = status.toUpperCase();
 
-    @Transactional(readOnly = true)
-    public List<TicketCommentResponse> getTicketComments(String email, Long ticketId) {
-        // Only expose comments on tickets owned by the logged-in user.
-        Ticket ticket = getAccessibleTicket(ticketId, email);
+                // Basic validation: once CLOSED or REJECTED, status cannot be changed
+                if ("CLOSED".equals(oldStatus) || "REJECTED".equals(oldStatus)) {
 
-        // Oldest to newest keeps the thread natural in the UI.
-        return ticketCommentRepository.findByTicket_IdOrderByCreatedAtAsc(ticket.getId())
-                .stream()
-                .map(this::toTicketCommentResponse)
-                .collect(Collectors.toList());
-    }
+                }
 
-    @Transactional
-    public TicketCommentResponse addComment(String email, Long ticketId, String commentText) {
-        User commentedBy = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                ticket.setStatus(newStatus);
 
-        // Reuse same access rule for reads and writes.
-        Ticket ticket = getAccessibleTicket(ticketId, email);
+                if (notes != null) {
+                        ticket.setResolutionNotes(notes);
+                }
 
-        TicketComment comment = TicketComment.builder()
-                .ticket(ticket)
-                .commentedBy(commentedBy)
-                .commentText(commentText.trim())
-                .build();
+                if ("REJECTED".equals(newStatus)) {
+                        if (rejectionReason == null || rejectionReason.trim().isEmpty()) {
+                                throw new RuntimeException("Rejection reason is required when rejecting a ticket");
+                        }
+                        ticket.setRejectionReason(rejectionReason);
+                }
 
-        TicketComment savedComment = ticketCommentRepository.save(comment);
-        return toTicketCommentResponse(savedComment);
-    }
+                Ticket savedTicket = ticketRepository.save(ticket);
+                return mapToListItem(savedTicket);
+        }
+
+        private TicketListItem mapToListItem(Ticket ticket) {
+                String locationName = (ticket.getAsset() != null
+                                && ticket.getAsset().getLocation() != null)
+                                                ? ticket.getAsset().getLocation().getName()
+                                                : "";
+                String assetName = ticket.getAsset() != null ? ticket.getAsset().getName() : "";
+                Long assetId = ticket.getAsset() != null ? ticket.getAsset().getId() : null;
+
+                return TicketListItem.builder()
+                                .ticketId(ticket.getId())
+                                .title(ticket.getTitle())
+                                .description(ticket.getDescription())
+                                .priority(ticket.getPriority())
+                                .status(ticket.getStatus())
+                                .contact(ticket.getContact())
+                                .assetId(assetId)
+                                .assetName(assetName)
+                                .locationName(locationName)
+                                .reportedByName(
+                                                ticket.getReportedBy().getFirstName() + " "
+                                                                + ticket.getReportedBy().getLastName())
+                                .createdAt(ticket.getCreatedAt())
+                                .rejectionReason(ticket.getRejectionReason())
+                                .resolutionNotes(ticket.getResolutionNotes())
+                                .attachmentUrls(ticket.getAttachments().stream()
+                                                .map(TicketAttachment::getFilePath)
+                                                .collect(Collectors.toList()))
+                                .build();
+        }
+
+        @Transactional(readOnly = true)
+        public List<TicketCommentResponse> getTicketComments(String email, Long ticketId) {
+                // Only expose comments on tickets owned by the logged-in user.
+                Ticket ticket = getAccessibleTicket(ticketId, email);
+
+                // Oldest to newest keeps the thread natural in the UI.
+                return ticketCommentRepository.findByTicket_IdOrderByCreatedAtAsc(ticket.getId())
+                                .stream()
+                                .map(this::toTicketCommentResponse)
+                                .collect(Collectors.toList());
+        }
+
+        @Transactional
+        public TicketCommentResponse addComment(String email, Long ticketId, String commentText) {
+                User commentedBy = userRepository.findByEmail(email)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+
+                // Reuse same access rule for reads and writes.
+                Ticket ticket = getAccessibleTicket(ticketId, email);
+
+                TicketComment comment = TicketComment.builder()
+                                .ticket(ticket)
+                                .commentedBy(commentedBy)
+                                .commentText(commentText.trim())
+                                .build();
+
+                TicketComment savedComment = ticketCommentRepository.save(comment);
+                return toTicketCommentResponse(savedComment);
+        }
 
         @Transactional
         public TicketCommentResponse updateComment(String email, Long ticketId, Long commentId, String commentText) {
@@ -200,24 +247,25 @@ public class TicketService {
                 ticketCommentRepository.delete(comment);
         }
 
-    private Ticket getAccessibleTicket(Long ticketId, String email) {
-        Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+        private Ticket getAccessibleTicket(Long ticketId, String email) {
+                Ticket ticket = ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
 
                 // For now, comments are scoped to the ticket reporter only.
-        String ownerEmail = ticket.getReportedBy() != null ? ticket.getReportedBy().getEmail() : null;
-        if (ownerEmail == null || !ownerEmail.equalsIgnoreCase(email)) {
-            throw new RuntimeException("You do not have access to this ticket");
-        }
+                String ownerEmail = ticket.getReportedBy() != null ? ticket.getReportedBy().getEmail() : null;
+                if (ownerEmail == null || !ownerEmail.equalsIgnoreCase(email)) {
+                        throw new RuntimeException("You do not have access to this ticket");
+                }
 
-        return ticket;
-    }
+                return ticket;
+        }
 
         private TicketComment getOwnedComment(Long ticketId, Long commentId, String email) {
                 TicketComment comment = ticketCommentRepository.findByIdAndTicket_Id(commentId, ticketId)
                                 .orElseThrow(() -> new RuntimeException("Comment not found"));
 
-                String commentOwnerEmail = comment.getCommentedBy() != null ? comment.getCommentedBy().getEmail() : null;
+                String commentOwnerEmail = comment.getCommentedBy() != null ? comment.getCommentedBy().getEmail()
+                                : null;
                 if (commentOwnerEmail == null || !commentOwnerEmail.equalsIgnoreCase(email)) {
                         throw new RuntimeException("You can only edit or delete your own comments");
                 }
@@ -225,29 +273,29 @@ public class TicketService {
                 return comment;
         }
 
-    private TicketCommentResponse toTicketCommentResponse(TicketComment comment) {
-        String authorName = "Unknown User";
-        if (comment.getCommentedBy() != null) {
-            String firstName = comment.getCommentedBy().getFirstName() == null
-                    ? ""
-                    : comment.getCommentedBy().getFirstName();
-            String lastName = comment.getCommentedBy().getLastName() == null
-                    ? ""
-                    : comment.getCommentedBy().getLastName();
-            String fullName = (firstName + " " + lastName).trim();
-            // If profile names are missing, email is still better than a blank author.
-            authorName = fullName.isBlank()
-                    ? comment.getCommentedBy().getEmail()
-                    : fullName;
-        }
+        private TicketCommentResponse toTicketCommentResponse(TicketComment comment) {
+                String authorName = "Unknown User";
+                if (comment.getCommentedBy() != null) {
+                        String firstName = comment.getCommentedBy().getFirstName() == null
+                                        ? ""
+                                        : comment.getCommentedBy().getFirstName();
+                        String lastName = comment.getCommentedBy().getLastName() == null
+                                        ? ""
+                                        : comment.getCommentedBy().getLastName();
+                        String fullName = (firstName + " " + lastName).trim();
+                        // If profile names are missing, email is still better than a blank author.
+                        authorName = fullName.isBlank()
+                                        ? comment.getCommentedBy().getEmail()
+                                        : fullName;
+                }
 
-        return TicketCommentResponse.builder()
-                .commentId(comment.getId())
-                .ticketId(comment.getTicket().getId())
-                .authorName(authorName)
-                .comment(comment.getCommentText())
-                .createdAt(comment.getCreatedAt())
-                .updatedAt(comment.getUpdatedAt())
-                .build();
-    }
+                return TicketCommentResponse.builder()
+                                .commentId(comment.getId())
+                                .ticketId(comment.getTicket().getId())
+                                .authorName(authorName)
+                                .comment(comment.getCommentText())
+                                .createdAt(comment.getCreatedAt())
+                                .updatedAt(comment.getUpdatedAt())
+                                .build();
+        }
 }
