@@ -11,8 +11,8 @@ describe('LandingPage', () => {
             </MemoryRouter>
         )
 
-        expect(screen.getByRole('heading', { name: /smart campus operations hub/i })).toBeInTheDocument()
-        expect(screen.getByRole('link', { name: /login/i })).toHaveAttribute('href', '/login')
-        expect(screen.getByRole('link', { name: /register/i })).toHaveAttribute('href', '/register')
+        expect(screen.getByRole('heading', { name: /smart campus operations, simplified/i })).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute('href', '/login')
+        expect(screen.getByRole('link', { name: /get started/i })).toHaveAttribute('href', '/register')
     })
 })
