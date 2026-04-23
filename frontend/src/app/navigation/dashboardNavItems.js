@@ -17,3 +17,10 @@ export const ADMIN_NAV_ITEMS = [
     { path: '/admin/users', icon: Users, label: 'User Management' },
     { path: '/admin/reports', icon: BarChart3, label: 'Reports & Analytics' }
 ]
+
+// Navigation used by the technician dashboard
+export const TECHNICIAN_NAV_ITEMS = [
+    { path: '/technician', icon: LayoutDashboard, label: 'Overview' },
+    { path: '/technician/tasks', icon: Ticket, label: 'Assigned Tasks' }
+]
+
