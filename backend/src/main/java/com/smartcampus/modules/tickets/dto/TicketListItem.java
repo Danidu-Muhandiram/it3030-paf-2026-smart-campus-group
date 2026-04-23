@@ -29,5 +29,6 @@ public class TicketListItem {
     private String reportedByName;
     private LocalDateTime createdAt;
     private String rejectionReason;
+    private String resolutionNotes;
     private List<String> attachmentUrls;
 }
