@@ -177,6 +177,12 @@ export function AppRoutes() {
                 </AdminDashboardRoute>
             } />
 
+            <Route path="/admin/bookings/:id" element={
+                <AdminDashboardRoute>
+                    <BookingDetailsPage />
+                </AdminDashboardRoute>
+            } />
+
             <Route path="/admin/resources" element={
                 <AdminDashboardRoute>
                     <AdminResourcesPage />
