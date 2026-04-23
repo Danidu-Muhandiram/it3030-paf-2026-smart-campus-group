@@ -18,7 +18,7 @@ export const Sidebar = ({
     // Defaults keep existing user dashboard behavior when props are omitted.
     navItems = USER_NAV_ITEMS,
     profilePath = '/dashboard/profile',
-    brandLabel = 'Smart Campus'
+    brandLabel = 'Apex Campus'
 }) => {
     const { logout } = useAuth();
     const navigate = useNavigate();

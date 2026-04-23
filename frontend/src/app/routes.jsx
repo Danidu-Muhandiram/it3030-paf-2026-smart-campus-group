@@ -108,7 +108,7 @@ const UserDashboardGate = ({ children }) => {
         <DashboardLayout
             navItems={USER_NAV_ITEMS}
             profilePath="/dashboard/profile"
-            brandLabel="Smart Campus"
+            brandLabel="Apex Campus"
         >
             {children}
         </DashboardLayout>
@@ -121,7 +121,7 @@ const AdminDashboardRoute = ({ children }) => (
         <DashboardLayout
             navItems={ADMIN_NAV_ITEMS}
             profilePath="/admin/profile"
-            brandLabel="Campus Admin"
+            brandLabel="Apex Admin"
         >
             {children}
         </DashboardLayout>
@@ -133,7 +133,7 @@ const TechnicianDashboardRoute = ({ children }) => (
         <DashboardLayout
             navItems={TECHNICIAN_NAV_ITEMS}
             profilePath="/technician/profile"
-            brandLabel="Campus Technician"
+            brandLabel="Apex Tech"
         >
             {children}
         </DashboardLayout>

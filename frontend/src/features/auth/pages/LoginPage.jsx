@@ -119,7 +119,7 @@ export const LoginPage = () => {
                             <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center">
                                 <Building2 className="w-5 h-5 text-white" />
                             </div>
-                            SLIIT Smart Campus
+                            Apex Campus
                         </Link>
 
                         <Link to="/" className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur border border-white/20 flex items-center justify-center transition-colors shrink-0">
@@ -143,7 +143,7 @@ export const LoginPage = () => {
                     </div>
 
                     <div className="mt-10 text-blue-300/60 text-sm">
-                        © 2026 SLIIT Smart Campus Operations Hub
+                        © 2026 Apex Smart Campus Operations Hub
                     </div>
                 </div>
             </div>
@@ -178,7 +178,7 @@ export const LoginPage = () => {
                             <input
                                 type="email"
                                 name="email"
-                                placeholder="idnumber@my.sliit.lk"
+                                placeholder="idnumber@my.apex.lk"
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 className="w-full px-3 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm text-text-main transition-all"
@@ -246,7 +246,7 @@ export const LoginPage = () => {
                             </div>
                         </div>
 
-                        <button 
+                        <button
                             type="button"
                             aria-label="Sign in with Google"
                             onClick={handleGoogleLogin}
