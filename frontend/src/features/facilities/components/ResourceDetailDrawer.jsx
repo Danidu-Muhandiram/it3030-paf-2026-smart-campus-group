@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import {
     X, Minus, Maximize2, CalendarCheck, MapPin, Users,
     Tag, Activity, ChevronLeft, ChevronRight, Clock,
-    CheckCircle2, XCircle, Star,
+    CheckCircle2, XCircle, Star, Loader2,
 } from 'lucide-react';
 import { getTypeConfig } from '../constants/resourceTypeConfig';
+import { getAssetAvailability } from '../../../services/resourceService';
 
 // ---------------------------------------------------------------------------
 // Mini availability calendar — self-contained, consistent with design system
@@ -26,16 +27,6 @@ function buildCalendarWeeks(year, month) {
 }
 
 const WEEK_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
-/** Mock time-slots — replace with API data when backend is wired. */
-const MOCK_SLOTS = [
-    { start: '08:00', end: '09:30', booked: false },
-    { start: '09:30', end: '11:00', booked: true,  bookedBy: 'Dr. A. Silva'  },
-    { start: '11:00', end: '12:30', booked: false },
-    { start: '13:00', end: '14:30', booked: true,  bookedBy: 'Ms. R. Perera' },
-    { start: '14:30', end: '16:00', booked: false },
-    { start: '16:00', end: '17:30', booked: false },
-];
 
 const fmt = (d) =>
     d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -109,34 +100,69 @@ const MiniCalendar = ({ selectedDate, onDateSelect }) => {
 // ---------------------------------------------------------------------------
 // Time slots panel
 // ---------------------------------------------------------------------------
-const TimeSlots = ({ date }) => {
-    // TODO: replace with real API call: resourceService.getSlots(resourceId, date)
-    const slots = MOCK_SLOTS;
+const TimeSlots = ({ date, slots, loading, error }) => {
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center gap-2 py-6 text-text-muted text-xs">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Loading slots…
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <p className="text-xs text-red-500 py-4 text-center">
+                Failed to load availability. Please try again.
+            </p>
+        );
+    }
+
     return (
         <div className="space-y-1.5">
             <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">
-                Time Slots — {date ?? 'Select a date'}
+                Time Slots — {date}
             </p>
-            {slots.map((s) => (
-                <div
-                    key={s.start}
-                    className={`flex items-center justify-between rounded-lg px-3 py-2 border text-xs
-                        ${s.booked
-                            ? 'bg-red-50 border-red-100 text-red-700'
-                            : 'bg-green-50 border-green-100 text-green-700'}`}
-                >
-                    <div className="flex items-center gap-2">
-                        <Clock className="w-3 h-3 shrink-0" />
-                        <span className="font-semibold">{s.start} – {s.end}</span>
-                        {s.booked && s.bookedBy && (
-                            <span className="text-red-500 text-[10px] truncate max-w-28">· {s.bookedBy}</span>
+            {slots.length === 0 && (
+                <p className="text-xs text-text-muted py-2 text-center">No slots found for this day.</p>
+            )}
+            {slots.map((s) => {
+                const isPending  = s.status === 'PENDING';
+                const colorClass = !s.booked
+                    ? 'bg-green-50 border-green-100 text-green-700'
+                    : isPending
+                        ? 'bg-orange-50 border-orange-100 text-orange-700'
+                        : 'bg-red-50 border-red-100 text-red-700';
+                return (
+                    <div
+                        key={s.startTime}
+                        className={`rounded-lg px-3 py-2 border text-xs ${colorClass}`}
+                    >
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-3 h-3 shrink-0" />
+                                <span className="font-semibold">{s.startTime} – {s.endTime}</span>
+                                {isPending && (
+                                    <span className="text-[9px] font-bold uppercase tracking-wide bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded">Pending</span>
+                                )}
+                            </div>
+                            {s.booked
+                                ? <XCircle className="w-3.5 h-3.5 shrink-0" />
+                                : <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
+                        </div>
+                        {s.booked && (s.requestedBy || s.purpose) && (
+                            <div className="mt-1 pl-5 space-y-0.5">
+                                {s.requestedBy && (
+                                    <p className="text-[10px] font-medium opacity-80">👤 {s.requestedBy}</p>
+                                )}
+                                {s.purpose && (
+                                    <p className="text-[10px] opacity-70 truncate">📋 {s.purpose}</p>
+                                )}
+                            </div>
                         )}
                     </div>
-                    {s.booked
-                        ? <XCircle className="w-3.5 h-3.5 shrink-0" />
-                        : <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
-                </div>
-            ))}
+                );
+            })}
         </div>
     );
 };
@@ -180,12 +206,28 @@ export const ResourceDetailDrawer = ({
 }) => {
     const [minimised,    setMinimised]    = useState(false);
     const [selectedDate, setSelectedDate] = useState(null);
+    const [slots,        setSlots]        = useState([]);
+    const [slotsLoading, setSlotsLoading] = useState(false);
+    const [slotsError,   setSlotsError]   = useState(false);
 
-    // Reset minimised state each time resource changes
+    // Reset state each time a different resource is opened
     useEffect(() => {
         setMinimised(false);
         setSelectedDate(null);
+        setSlots([]);
+        setSlotsError(false);
     }, [resource?.id]);
+
+    // Fetch availability whenever the selected date changes
+    useEffect(() => {
+        if (!selectedDate || !resource?.id) return;
+        setSlotsLoading(true);
+        setSlotsError(false);
+        getAssetAvailability(resource.id, selectedDate)
+            .then((data) => { setSlots(data ?? []); })
+            .catch(() => { setSlotsError(true); setSlots([]); })
+            .finally(() => setSlotsLoading(false));
+    }, [resource?.id, selectedDate]);
 
     // Close on Escape
     useEffect(() => {
@@ -350,7 +392,14 @@ export const ResourceDetailDrawer = ({
                                         selectedDate={selectedDate}
                                         onDateSelect={setSelectedDate}
                                     />
-                                    {selectedDate && <TimeSlots date={selectedDate} />}
+                                    {selectedDate && (
+                                        <TimeSlots
+                                            date={selectedDate}
+                                            slots={slots}
+                                            loading={slotsLoading}
+                                            error={slotsError}
+                                        />
+                                    )}
                                 </section>
                             </div>
                         </div>
