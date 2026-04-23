@@ -6,6 +6,7 @@ import com.smartcampus.modules.tickets.dto.TicketListItem;
 import com.smartcampus.modules.tickets.dto.TicketResolveRequest;
 import com.smartcampus.modules.tickets.dto.TicketResponse;
 import com.smartcampus.modules.tickets.dto.TicketStatusUpdateRequest;
+import com.smartcampus.modules.tickets.dto.TicketUpdateRequest;
 import com.smartcampus.modules.tickets.service.TicketService;
 import com.smartcampus.shared.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -49,6 +50,34 @@ public class TicketController {
         try {
             List<TicketListItem> tickets = ticketService.getMyTickets(email);
             return ResponseEntity.ok(new ApiResponse<>(true, "Tickets fetched successfully", tickets));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @PutMapping("/{ticketId}")
+    public ResponseEntity<ApiResponse<TicketResponse>> updateTicket(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long ticketId,
+            @Valid @RequestBody TicketUpdateRequest request) {
+        try {
+            TicketResponse response = ticketService.updateTicket(
+                    email, ticketId, request.getTitle(), request.getDescription(),
+                    request.getPriority(), request.getAssetId(), request.getContact()
+            );
+            return ResponseEntity.ok(new ApiResponse<>(true, "Ticket updated successfully", response));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
+        }
+    }
+
+    @DeleteMapping("/{ticketId}")
+    public ResponseEntity<ApiResponse<Void>> deleteTicket(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long ticketId) {
+        try {
+            ticketService.deleteTicket(email, ticketId);
+            return ResponseEntity.ok(new ApiResponse<>(true, "Ticket deleted successfully", null));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ApiResponse<>(false, e.getMessage(), null));
         }

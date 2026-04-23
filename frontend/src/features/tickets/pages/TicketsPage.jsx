@@ -133,6 +133,9 @@ export const TicketsPage = () => {
     const [lightboxUrl, setLightboxUrl] = useState(null)
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
+    const [isEditingTicket, setIsEditingTicket] = useState(false)
+    const [editTicketData, setEditTicketData] = useState(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const [newTicket, setNewTicket] = useState({
         title: '',
@@ -181,6 +184,10 @@ export const TicketsPage = () => {
         }
         setNewFiles(files.slice(0, 3))
     }
+
+    useEffect(() => {
+        setIsEditingTicket(false);
+    }, [selectedTicketId]);
 
     const handleCreateTicket = async (event) => {
         event.preventDefault()
@@ -236,6 +243,62 @@ export const TicketsPage = () => {
         } catch (error) {
             console.error('Ticket creation error', error)
             setFormError('Network error occurred while submitting ticket')
+        }
+    }
+
+    const handleUpdateTicket = async (event) => {
+        event.preventDefault()
+        if (!editTicketData) return
+
+        const numericId = getTicketNumericId(editTicketData.id)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: editTicketData.title,
+                    description: editTicketData.description,
+                    priority: editTicketData.priority,
+                    assetId: editTicketData.resourceId,
+                    contact: editTicketData.preferredContact
+                })
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                await fetchMyTickets()
+                setIsEditingTicket(false)
+            } else {
+                alert(data.message || 'Failed to update ticket')
+            }
+        } catch (error) {
+            console.error('Update error', error)
+            alert('Network error')
+        }
+    }
+
+    const handleDeleteTicket = async (ticketId) => {
+        if (!window.confirm('Are you sure you want to delete this closed ticket? This action cannot be undone.')) return
+        
+        const numericId = getTicketNumericId(ticketId)
+        setIsDeleting(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                setSelectedTicketId(null)
+                await fetchMyTickets()
+            } else {
+                alert(data.message || 'Failed to delete ticket')
+            }
+        } catch (error) {
+            console.error('Delete error', error)
+            alert('Network error')
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -456,14 +519,95 @@ export const TicketsPage = () => {
                                         <h3 className="text-base font-semibold text-text-main">{selectedTicket.title}</h3>
                                         <p className="text-xs text-text-light">{selectedTicket.id} • {selectedTicket.location || 'No location set'}</p>
                                     </div>
-                                    <span className={`text-xs px-2.5 py-1 rounded border w-fit ${STATUS_STYLES[selectedTicket.status]}`}>
-                                        {selectedTicket.status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {selectedTicket.status === 'OPEN' && !isEditingTicket && (
+                                            <button 
+                                                onClick={() => {
+                                                    setIsEditingTicket(true);
+                                                    setEditTicketData({ ...selectedTicket });
+                                                }}
+                                                className="px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10 rounded border border-primary/20"
+                                            >
+                                                EDIT TICKET
+                                            </button>
+                                        )}
+                                        {selectedTicket.status === 'CLOSED' && (
+                                            <button 
+                                                onClick={() => handleDeleteTicket(selectedTicket.id)}
+                                                disabled={isDeleting}
+                                                className="px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded border border-rose-100"
+                                            >
+                                                {isDeleting ? 'DELETING...' : 'DELETE TICKET'}
+                                            </button>
+                                        )}
+                                        <span className={`text-xs px-2.5 py-1 rounded border w-fit ${STATUS_STYLES[selectedTicket.status]}`}>
+                                            {selectedTicket.status}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                    <p className="text-sm text-text-muted">{selectedTicket.description}</p>
-                                </div>
+                                {isEditingTicket ? (
+                                    <form onSubmit={handleUpdateTicket} className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/10">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Title</label>
+                                            <input 
+                                                value={editTicketData.title}
+                                                onChange={(e) => setEditTicketData({...editTicketData, title: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Description</label>
+                                            <textarea 
+                                                value={editTicketData.description}
+                                                onChange={(e) => setEditTicketData({...editTicketData, description: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                rows={3}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Priority</label>
+                                                <select 
+                                                    value={editTicketData.priority}
+                                                    onChange={(e) => setEditTicketData({...editTicketData, priority: e.target.value})}
+                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white"
+                                                >
+                                                    <option value="LOW">Low</option>
+                                                    <option value="MEDIUM">Medium</option>
+                                                    <option value="HIGH">High</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Contact</label>
+                                                <input 
+                                                    value={editTicketData.preferredContact}
+                                                    onChange={(e) => setEditTicketData({...editTicketData, preferredContact: e.target.value})}
+                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setIsEditingTicket(false)}
+                                                className="px-4 py-2 text-xs font-bold text-text-muted hover:text-text-main transition-colors"
+                                            >
+                                                CANCEL
+                                            </button>
+                                            <button 
+                                                type="submit"
+                                                className="px-6 py-2 text-xs font-bold bg-primary text-white rounded-lg hover:bg-primary-dark transition-all"
+                                            >
+                                                SAVE CHANGES
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                                        <p className="text-sm text-text-muted">{selectedTicket.description}</p>
+                                    </div>
+                                )}
 
                                 {selectedTicket.assignedToName && (
                                     <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">

@@ -88,11 +88,6 @@ export const TicketComments = ({ ticketId, ticketStatus }) => {
                 <h3 className="text-sm font-bold text-text-light uppercase tracking-wider flex items-center gap-2">
                     <MessageSquare size={16} /> Comments ({comments.length})
                 </h3>
-                {isClosed && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">
-                        <Lock size={10} /> THREAD CLOSED
-                    </span>
-                )}
             </div>
 
             {/* List */}

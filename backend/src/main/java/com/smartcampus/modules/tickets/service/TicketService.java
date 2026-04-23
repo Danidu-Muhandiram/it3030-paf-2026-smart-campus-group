@@ -102,21 +102,27 @@ public class TicketService {
 
                 Ticket savedTicket = ticketRepository.save(ticket);
 
+                return mapToTicketResponse(savedTicket);
+        }
+
+        private TicketResponse mapToTicketResponse(Ticket ticket) {
                 return TicketResponse.builder()
-                                .ticketId(savedTicket.getId())
-                                .title(savedTicket.getTitle())
-                                .description(savedTicket.getDescription())
-                                .priority(savedTicket.getPriority())
-                                .status(savedTicket.getStatus())
-                                .contact(savedTicket.getContact())
-                                .assetId(asset.getId())
-                                .assetName(asset.getName())
-                                .reportedByName(reportedBy.getFirstName() + " " + reportedBy.getLastName())
-                                .createdAt(savedTicket.getCreatedAt())
-                                .updatedAt(savedTicket.getUpdatedAt())
-                                .resolvedAt(savedTicket.getResolvedAt())
-                                .closedAt(savedTicket.getClosedAt())
-                                .attachmentUrls(savedTicket.getAttachments().stream()
+                                .ticketId(ticket.getId())
+                                .title(ticket.getTitle())
+                                .description(ticket.getDescription())
+                                .priority(ticket.getPriority())
+                                .status(ticket.getStatus())
+                                .contact(ticket.getContact())
+                                .assetId(ticket.getAsset().getId())
+                                .assetName(ticket.getAsset().getName())
+                                .reportedByName(ticket.getReportedBy().getFirstName() + " " + ticket.getReportedBy().getLastName())
+                                .createdAt(ticket.getCreatedAt())
+                                .updatedAt(ticket.getUpdatedAt())
+                                .resolvedAt(ticket.getResolvedAt())
+                                .closedAt(ticket.getClosedAt())
+                                .rejectionReason(ticket.getRejectionReason())
+                                .resolutionNotes(ticket.getResolutionNotes())
+                                .attachmentUrls(ticket.getAttachments().stream()
                                                 .map(TicketAttachment::getFilePath)
                                                 .collect(Collectors.toList()))
                                 .build();
@@ -255,6 +261,49 @@ public class TicketService {
 
                 Ticket savedTicket = ticketRepository.save(ticket);
                 return mapToListItem(savedTicket);
+        }
+
+        @Transactional
+        public TicketResponse updateTicket(String email, Long ticketId, String title, String description,
+                        String priority, Long assetId, String contact) {
+                Ticket ticket = ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+                if (!ticket.getReportedBy().getEmail().equalsIgnoreCase(email)) {
+                        throw new RuntimeException("You are not authorized to edit this ticket");
+                }
+
+                if (!"OPEN".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Only tickets in OPEN state can be edited");
+                }
+
+                Asset asset = assetRepository.findById(assetId)
+                                .orElseThrow(() -> new RuntimeException("Asset not found"));
+
+                ticket.setTitle(title);
+                ticket.setDescription(description);
+                ticket.setPriority(priority == null ? "MEDIUM" : priority.toUpperCase());
+                ticket.setAsset(asset);
+                ticket.setContact(contact);
+
+                Ticket savedTicket = ticketRepository.save(ticket);
+                return mapToTicketResponse(savedTicket);
+        }
+
+        @Transactional
+        public void deleteTicket(String email, Long ticketId) {
+                Ticket ticket = ticketRepository.findById(ticketId)
+                                .orElseThrow(() -> new RuntimeException("Ticket not found"));
+
+                if (!ticket.getReportedBy().getEmail().equalsIgnoreCase(email)) {
+                        throw new RuntimeException("You are not authorized to delete this ticket");
+                }
+
+                if (!"CLOSED".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Only tickets in CLOSED state can be deleted");
+                }
+
+                ticketRepository.delete(ticket);
         }
 
         private TicketListItem mapToListItem(Ticket ticket) {
