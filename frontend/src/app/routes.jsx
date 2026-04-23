@@ -12,6 +12,7 @@ import { AdminResourcesPage } from '../features/admin-dashboard/pages/AdminResou
 import { AdminUsersPage } from '../features/admin-dashboard/pages/AdminUsersPage'
 import { AdminReportsPage } from '../features/admin-dashboard/pages/AdminReportsPage'
 import { AdminBookingsPage } from '../features/booking/pages/AdminBookingPage'
+import { BookingDetailsPage } from '../features/booking/pages/BookingDetailsPage'
 import { BookingRequestPage } from '../features/booking/pages/BookingRequestPage'
 import { MyBookingPage } from '../features/booking/pages/MyBookingPage'
 import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from './navigation/dashboardNavItems'
