@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Users, FileText, CheckCircle, XCircle } from 'lucide-react';
 import '../styles/booking.css';
 
-const BookingDetailsPage = () => {
+export const BookingDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
