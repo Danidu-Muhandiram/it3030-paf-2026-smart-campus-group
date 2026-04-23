@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Users, FileText, CheckCircle, XCircle } from 'lucide-react';
 import '../styles/booking.css';
+import axiosInstance from '../../../services/axios';
 
 export const BookingDetailsPage = () => {
   const { id } = useParams();
@@ -20,21 +21,8 @@ export const BookingDetailsPage = () => {
   const fetchBookingDetails = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
-      // Fetch booking details
-      const bookingResponse = await fetch(`http://localhost:8086/api/bookings/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!bookingResponse.ok) {
-        throw new Error('Failed to fetch booking details');
-      }
-
-      const bookingData = await bookingResponse.json();
+      const bookingResponse = await axiosInstance.get(`/bookings/${id}`);
+      const bookingData = bookingResponse.data;
       setBooking(bookingData.data);
 
       // Fetch other bookings for the same resource and date
@@ -51,21 +39,10 @@ export const BookingDetailsPage = () => {
 
   const fetchTimeSlots = async (resourceName, date) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(
-        `http://localhost:8086/api/bookings/resource/${encodeURIComponent(resourceName)}/date/${date}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
+      const response = await axiosInstance.get(
+        `/bookings/resource/${encodeURIComponent(resourceName)}/date/${date}`
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        setTimeSlots(data.data || []);
-      }
+      setTimeSlots(response.data?.data || []);
     } catch (err) {
       console.error('Error fetching time slots:', err);
     }
@@ -73,25 +50,13 @@ export const BookingDetailsPage = () => {
 
   const handleApprove = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8086/api/bookings/admin/${id}/approve`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        alert('Booking approved successfully!');
-        navigate('/admin/bookings');
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to approve booking');
-      }
+      await axiosInstance.post(`/bookings/admin/${id}/approve`);
+      alert('Booking approved successfully!');
+      navigate('/admin/bookings');
     } catch (err) {
       console.error('Error approving booking:', err);
-      alert('Failed to approve booking');
+      const message = err?.response?.data?.message || 'Failed to approve booking';
+      alert(message);
     }
   };
 
@@ -102,26 +67,13 @@ export const BookingDetailsPage = () => {
     }
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8086/api/bookings/admin/${id}/reject`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ reason: rejectionReason })
-      });
-
-      if (response.ok) {
-        alert('Booking rejected successfully!');
-        navigate('/admin/bookings');
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Failed to reject booking');
-      }
+      await axiosInstance.post(`/bookings/admin/${id}/reject`, { reason: rejectionReason });
+      alert('Booking rejected successfully!');
+      navigate('/admin/bookings');
     } catch (err) {
       console.error('Error rejecting booking:', err);
-      alert('Failed to reject booking');
+      const message = err?.response?.data?.message || 'Failed to reject booking';
+      alert(message);
     }
   };
 

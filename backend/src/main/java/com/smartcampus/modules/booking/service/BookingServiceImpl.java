@@ -9,53 +9,41 @@ import com.smartcampus.modules.booking.dto.RejectBookingRequest;
 import com.smartcampus.modules.booking.entity.Booking;
 import com.smartcampus.modules.booking.entity.BookingStatus;
 import com.smartcampus.modules.booking.repository.BookingRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
 
-    public BookingServiceImpl(BookingRepository bookingRepository, UserRepository userRepository) {
-        this.bookingRepository = bookingRepository;
-        this.userRepository = userRepository;
-    }
-
     @Override
+    @Transactional
     public BookingResponse createBooking(CreateBookingRequest request, Long userId) {
-        log.info("Creating booking for user {} and resource {}", userId, request.getResourceName());
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+        User user = getUserOrThrow(userId);
 
-        // Validate time range
         if (!request.getEndTime().isAfter(request.getStartTime())) {
             throw new IllegalArgumentException("End time must be after start time");
         }
 
-        // Check for conflicts
-        List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
+        List<Booking> overlaps = bookingRepository.findOverlappingBookings(
                 request.getResourceName(),
                 request.getBookingDate(),
                 request.getStartTime(),
                 request.getEndTime()
         );
-
-        if (!overlappingBookings.isEmpty()) {
+        if (!overlaps.isEmpty()) {
             throw new IllegalStateException("This resource is already booked for the selected time range");
         }
 
-        // Create booking
         Booking booking = new Booking();
         booking.setUser(user);
         booking.setResourceName(request.getResourceName());
@@ -66,168 +54,121 @@ public class BookingServiceImpl implements BookingService {
         booking.setExpectedAttendees(request.getExpectedAttendees());
         booking.setStatus(BookingStatus.PENDING);
 
-        Booking savedBooking = bookingRepository.save(booking);
-        log.info("Booking created successfully with id: {}", savedBooking.getId());
-        
-        return BookingResponse.fromEntity(savedBooking);
+        return BookingResponse.fromEntity(bookingRepository.save(booking));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponse> getMyBookings(Long userId) {
-        log.info("Fetching all bookings for user {}", userId);
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-
-        return bookingRepository.findByUserOrderByBookingDateDescStartTimeDesc(user)
+        User user = getUserOrThrow(userId);
+        return bookingRepository.findByUserOrderByCreatedAtDesc(user)
                 .stream()
                 .map(BookingResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookingResponse> getMyUpcomingBookings(Long userId) {
-        log.info("Fetching upcoming bookings for user {}", userId);
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-
-        return bookingRepository.findUpcomingBookingsByUser(user, LocalDate.now())
-                .stream()
-                .map(BookingResponse::fromEntity)
-                .collect(Collectors.toList());
-    }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public List<BookingResponse> getMyPastBookings(Long userId) {
-        log.info("Fetching past bookings for user {}", userId);
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-
-        return bookingRepository.findPastBookingsByUser(user, LocalDate.now())
-                .stream()
-                .map(BookingResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponse> getAllBookings() {
-        log.info("Fetching all bookings");
-        
         return bookingRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(BookingResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponse> getBookingsByStatus(BookingStatus status) {
-        log.info("Fetching bookings with status: {}", status);
-        
         return bookingRepository.findByStatusOrderByCreatedAtDesc(status)
                 .stream()
                 .map(BookingResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
     }
-    
+
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getBookingsByResourceAndDate(String resourceName, LocalDate date) {
-        log.info("Fetching bookings for resource {} on date {}", resourceName, date);
-        
+    public List<BookingResponse> getBookingsByResourceAndDate(String resourceName, java.time.LocalDate date) {
         return bookingRepository.findByResourceNameAndBookingDateOrderByStartTimeAsc(resourceName, date)
                 .stream()
                 .map(BookingResponse::fromEntity)
-                .collect(Collectors.toList());
+                .toList();
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public BookingResponse getBookingById(Long bookingId, Long userId) {
-        log.info("Fetching booking {} for user {}", bookingId, userId);
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-        
+        User user = getUserOrThrow(userId);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + bookingId));
-        
-        // Check if user owns this booking or is admin
+
         if (!booking.getUser().getId().equals(userId) && !isAdmin(user)) {
             throw new IllegalArgumentException("You don't have permission to view this booking");
         }
-        
+
         return BookingResponse.fromEntity(booking);
     }
 
     @Override
+    @Transactional
     public BookingResponse approveBooking(Long bookingId, Long adminUserId) {
-        log.info("Admin {} approving booking {}", adminUserId, bookingId);
-        
+        User admin = getUserOrThrow(adminUserId);
+        if (!isAdmin(admin)) {
+            throw new IllegalArgumentException("Only admins can approve bookings");
+        }
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + bookingId));
-
-        User admin = userRepository.findById(adminUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Admin user not found with id: " + adminUserId));
 
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Only pending bookings can be approved");
         }
 
-        // Check for conflicts with already approved bookings
-        List<Booking> overlappingBookings = bookingRepository.findOverlappingBookingsExcludingId(
+        List<Booking> overlaps = bookingRepository.findOverlappingBookingsExcludingId(
                 booking.getResourceName(),
                 booking.getBookingDate(),
                 booking.getStartTime(),
                 booking.getEndTime(),
-                bookingId
+                booking.getId()
         );
-
-        if (!overlappingBookings.isEmpty()) {
-            throw new IllegalStateException("Cannot approve booking due to time conflict with another approved booking");
+        if (!overlaps.isEmpty()) {
+            throw new IllegalStateException("Cannot approve booking due to a scheduling conflict");
         }
 
-        booking.approve(admin);
-        Booking updatedBooking = bookingRepository.save(booking);
-        
-        log.info("Booking {} approved successfully", bookingId);
-        return BookingResponse.fromEntity(updatedBooking);
+        booking.setStatus(BookingStatus.APPROVED);
+        booking.setReviewedBy(admin);
+        booking.setReviewedAt(LocalDateTime.now());
+        booking.setRejectionReason(null);
+
+        return BookingResponse.fromEntity(bookingRepository.save(booking));
     }
 
     @Override
+    @Transactional
     public BookingResponse rejectBooking(Long bookingId, RejectBookingRequest request, Long adminUserId) {
-        log.info("Admin {} rejecting booking {}", adminUserId, bookingId);
-        
+        User admin = getUserOrThrow(adminUserId);
+        if (!isAdmin(admin)) {
+            throw new IllegalArgumentException("Only admins can reject bookings");
+        }
+
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found with id: " + bookingId));
-
-        User admin = userRepository.findById(adminUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Admin user not found with id: " + adminUserId));
 
         if (booking.getStatus() != BookingStatus.PENDING) {
             throw new IllegalStateException("Only pending bookings can be rejected");
         }
 
-        booking.reject(admin, request.getReason());
-        Booking updatedBooking = bookingRepository.save(booking);
-        
-        log.info("Booking {} rejected successfully", bookingId);
-        return BookingResponse.fromEntity(updatedBooking);
+        booking.setStatus(BookingStatus.REJECTED);
+        booking.setReviewedBy(admin);
+        booking.setReviewedAt(LocalDateTime.now());
+        booking.setRejectionReason(request.getReason());
+
+        return BookingResponse.fromEntity(bookingRepository.save(booking));
     }
 
     @Override
+    @Transactional
     public BookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId) {
-        log.info("User {} cancelling booking {}", userId, bookingId);
-        
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
-
+        User user = getUserOrThrow(userId);
         Booking booking = bookingRepository.findByIdAndUser(bookingId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Booking not found or does not belong to you"));
 
@@ -235,34 +176,24 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("Only approved bookings can be cancelled");
         }
 
-        booking.cancel();
-
-        // Optional cancellation reason
+        booking.setStatus(BookingStatus.CANCELLED);
         if (request != null && request.getReason() != null && !request.getReason().isBlank()) {
-            booking.setRejectionReason(request.getReason());
+            booking.setRejectionReason(request.getReason().trim());
         }
 
-        Booking updatedBooking = bookingRepository.save(booking);
-        
-        log.info("Booking {} cancelled successfully", bookingId);
-        return BookingResponse.fromEntity(updatedBooking);
+        return BookingResponse.fromEntity(bookingRepository.save(booking));
     }
-    
-    @Override
-    @Transactional(readOnly = true)
-    public BookingStatistics getBookingStatistics() {
-        log.info("Fetching booking statistics");
-        
-        long total = bookingRepository.count();
-        long pending = bookingRepository.countByStatus(BookingStatus.PENDING);
-        long approved = bookingRepository.countByStatus(BookingStatus.APPROVED);
-        long rejected = bookingRepository.countByStatus(BookingStatus.REJECTED);
-        long cancelled = bookingRepository.countByStatus(BookingStatus.CANCELLED);
-        
-        return new BookingStatistics(total, pending, approved, rejected, cancelled);
+
+    private User getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
     }
-    
+
     private boolean isAdmin(User user) {
-        return user.getRole() != null && "ROLE_ADMIN".equals(user.getRole().getName());
+        if (user.getRole() == null || user.getRole().getName() == null) {
+            return false;
+        }
+        String roleName = user.getRole().getName().toUpperCase();
+        return "ADMIN".equals(roleName) || "ROLE_ADMIN".equals(roleName);
     }
 }
