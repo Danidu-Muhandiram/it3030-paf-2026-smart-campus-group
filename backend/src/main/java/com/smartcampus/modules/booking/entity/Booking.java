@@ -17,8 +17,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-@Entity
-@Table(name = "bookings", indexes = {
+@Entity(name = "ResourceBooking")
+@Table(name = "resource_bookings", indexes = {
         @Index(name = "idx_booking_user", columnList = "user_id"),
         @Index(name = "idx_booking_resource", columnList = "resource_name"),
         @Index(name = "idx_booking_date", columnList = "booking_date"),

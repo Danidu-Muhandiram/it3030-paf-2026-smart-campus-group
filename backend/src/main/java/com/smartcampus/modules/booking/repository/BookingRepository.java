@@ -13,7 +13,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
+@Repository("bookingModuleRepository")
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByUserOrderByCreatedAtDesc(User user);
@@ -26,7 +26,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByResourceNameAndBookingDateOrderByStartTimeAsc(String resourceName, LocalDate bookingDate);
 
-    @Query("SELECT b FROM Booking b WHERE b.resourceName = :resourceName " +
+    @Query("SELECT b FROM ResourceBooking b WHERE b.resourceName = :resourceName " +
             "AND b.bookingDate = :date " +
             "AND b.status IN ('PENDING', 'APPROVED') " +
             "AND b.startTime < :endTime " +
@@ -38,7 +38,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("endTime") LocalTime endTime
     );
 
-    @Query("SELECT b FROM Booking b WHERE b.resourceName = :resourceName " +
+    @Query("SELECT b FROM ResourceBooking b WHERE b.resourceName = :resourceName " +
             "AND b.bookingDate = :date " +
             "AND b.status IN ('PENDING', 'APPROVED') " +
             "AND b.id <> :excludeId " +
