@@ -14,7 +14,10 @@ import { AdminReportsPage } from '../features/admin-dashboard/pages/AdminReports
 import { AdminBookingsPage } from '../features/booking/pages/AdminBookingPage'
 import { BookingRequestPage } from '../features/booking/pages/BookingRequestPage'
 import { MyBookingPage } from '../features/booking/pages/MyBookingPage'
-import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from './navigation/dashboardNavItems'
+import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS, TECHNICIAN_NAV_ITEMS } from './navigation/dashboardNavItems'
+import { TechnicianOverviewPage } from '../features/technician-dashboard/pages/TechnicianOverviewPage'
+import { TechnicianTasksPage } from '../features/technician-dashboard/pages/TechnicianTasksPage'
+
 import { useAuth } from '../features/auth/AuthContext'
 
 const AuthLoading = () => (
@@ -60,6 +63,25 @@ const RequireAdmin = ({ children }) => {
     return children
 }
 
+const RequireTechnician = ({ children }) => {
+    const { status, initialized, user } = useAuth()
+
+    if (!initialized) {
+        return <AuthLoading />
+    }
+
+    if (status !== 'authenticated') {
+        return <Navigate to="/login" replace />
+    }
+
+    if (String(user?.role?.name || '').toUpperCase() !== 'TECHNICIAN' && String(user?.role?.name || '').toUpperCase() !== 'ADMIN') {
+        return <Navigate to="/dashboard" replace />
+    }
+
+    return children
+}
+
+
 // Reuse one dashboard shell with user-specific navigation settings.
 const UserDashboardRoute = ({ children }) => (
     <RequireAuth>
@@ -98,6 +120,19 @@ const AdminDashboardRoute = ({ children }) => (
         </DashboardLayout>
     </RequireAdmin>
 )
+
+const TechnicianDashboardRoute = ({ children }) => (
+    <RequireTechnician>
+        <DashboardLayout
+            navItems={TECHNICIAN_NAV_ITEMS}
+            profilePath="/technician/profile"
+            brandLabel="Campus Technician"
+        >
+            {children}
+        </DashboardLayout>
+    </RequireTechnician>
+)
+
 
 export function AppRoutes() {
     return (
@@ -193,6 +228,26 @@ export function AppRoutes() {
                     <AdminReportsPage />
                 </AdminDashboardRoute>
             } />
+
+            {/* Technician dashboard routes */}
+            <Route path="/technician" element={
+                <TechnicianDashboardRoute>
+                    <TechnicianOverviewPage />
+                </TechnicianDashboardRoute>
+            } />
+
+            <Route path="/technician/profile" element={
+                <TechnicianDashboardRoute>
+                    <ProfilePage />
+                </TechnicianDashboardRoute>
+            } />
+
+            <Route path="/technician/tasks" element={
+                <TechnicianDashboardRoute>
+                    <TechnicianTasksPage />
+                </TechnicianDashboardRoute>
+            } />
+
         </Routes>
     )
 }
