@@ -12,10 +12,14 @@ import { AdminResourcesPage } from '../features/admin-dashboard/pages/AdminResou
 import { AdminUsersPage } from '../features/admin-dashboard/pages/AdminUsersPage'
 import { AdminReportsPage } from '../features/admin-dashboard/pages/AdminReportsPage'
 import { AdminBookingsPage } from '../features/booking/pages/AdminBookingPage'
+import { BookingDetailsPage } from '../features/booking/pages/BookingDetailsPage'
 import { BookingRequestPage } from '../features/booking/pages/BookingRequestPage'
 import { MyBookingPage } from '../features/booking/pages/MyBookingPage'
 import { FacilitiesCataloguePage } from '../features/facilities/pages/FacilitiesCataloguePage'
-import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS } from './navigation/dashboardNavItems'
+import { ADMIN_NAV_ITEMS, USER_NAV_ITEMS, TECHNICIAN_NAV_ITEMS } from './navigation/dashboardNavItems'
+import { TechnicianOverviewPage } from '../features/technician-dashboard/pages/TechnicianOverviewPage'
+import { TechnicianTasksPage } from '../features/technician-dashboard/pages/TechnicianTasksPage'
+
 import { useAuth } from '../features/auth/AuthContext'
 
 const AuthLoading = () => (
@@ -39,8 +43,13 @@ const RequireAuth = ({ children }) => {
     return children
 }
 
-const resolveDefaultDashboardPath = (role) =>
-    String(role || '').toUpperCase() === 'ADMIN' ? '/admin' : '/dashboard'
+const resolveDefaultDashboardPath = (role) => {
+    const r = String(role || '').toUpperCase();
+    if (r === 'ADMIN') return '/admin';
+    if (r === 'TECHNICIAN') return '/technician';
+    return '/dashboard';
+}
+
 
 const RequireAdmin = ({ children }) => {
     const { status, initialized, user } = useAuth()
@@ -60,6 +69,26 @@ const RequireAdmin = ({ children }) => {
 
     return children
 }
+
+const RequireTechnician = ({ children }) => {
+    const { status, initialized, user } = useAuth()
+
+    if (!initialized) {
+        return <AuthLoading />
+    }
+
+    if (status !== 'authenticated') {
+        return <Navigate to="/login" replace />
+    }
+
+    if (String(user?.role || '').toUpperCase() !== 'TECHNICIAN' && String(user?.role || '').toUpperCase() !== 'ADMIN') {
+        return <Navigate to="/dashboard" replace />
+    }
+
+
+    return children
+}
+
 
 // Reuse one dashboard shell with user-specific navigation settings.
 const UserDashboardRoute = ({ children }) => (
@@ -99,6 +128,19 @@ const AdminDashboardRoute = ({ children }) => (
         </DashboardLayout>
     </RequireAdmin>
 )
+
+const TechnicianDashboardRoute = ({ children }) => (
+    <RequireTechnician>
+        <DashboardLayout
+            navItems={TECHNICIAN_NAV_ITEMS}
+            profilePath="/technician/profile"
+            brandLabel="Campus Technician"
+        >
+            {children}
+        </DashboardLayout>
+    </RequireTechnician>
+)
+
 
 export function AppRoutes() {
     return (
@@ -183,6 +225,12 @@ export function AppRoutes() {
                 </AdminDashboardRoute>
             } />
 
+            <Route path="/admin/bookings/:id" element={
+                <AdminDashboardRoute>
+                    <BookingDetailsPage />
+                </AdminDashboardRoute>
+            } />
+
             <Route path="/admin/resources" element={
                 <AdminDashboardRoute>
                     <AdminResourcesPage />
@@ -200,6 +248,26 @@ export function AppRoutes() {
                     <AdminReportsPage />
                 </AdminDashboardRoute>
             } />
+
+            {/* Technician dashboard routes */}
+            <Route path="/technician" element={
+                <TechnicianDashboardRoute>
+                    <TechnicianOverviewPage />
+                </TechnicianDashboardRoute>
+            } />
+
+            <Route path="/technician/profile" element={
+                <TechnicianDashboardRoute>
+                    <ProfilePage />
+                </TechnicianDashboardRoute>
+            } />
+
+            <Route path="/technician/tasks" element={
+                <TechnicianDashboardRoute>
+                    <TechnicianTasksPage />
+                </TechnicianDashboardRoute>
+            } />
+
         </Routes>
     )
 }

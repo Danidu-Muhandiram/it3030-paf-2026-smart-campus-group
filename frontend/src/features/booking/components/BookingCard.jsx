@@ -1,4 +1,7 @@
+import { useNavigate } from 'react-router-dom';
+
 export function BookingCard({
+  id,
   resourceName,
   date,
   startTime,
@@ -12,6 +15,8 @@ export function BookingCard({
   onReject,
   showAdminActions = false
 }) {
+  const navigate = useNavigate();
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
@@ -37,8 +42,35 @@ export function BookingCard({
     );
   };
 
+  const handleCardClick = () => {
+    if (showAdminActions && status === 'PENDING') {
+      navigate(`/admin/bookings/${id}`);
+    }
+  };
+
+  const handleApproveClick = (e) => {
+    e.stopPropagation();
+    if (showAdminActions && status === 'PENDING') {
+      navigate(`/admin/bookings/${id}`);
+    } else if (onApprove) {
+      onApprove();
+    }
+  };
+
+  const handleRejectClick = (e) => {
+    e.stopPropagation();
+    if (showAdminActions && status === 'PENDING') {
+      navigate(`/admin/bookings/${id}`);
+    } else if (onReject) {
+      onReject();
+    }
+  };
+
   return (
-    <div className="border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+    <div 
+      className={`border rounded-lg shadow-sm hover:shadow-md transition-shadow ${showAdminActions && status === 'PENDING' ? 'cursor-pointer' : ''}`}
+      onClick={handleCardClick}
+    >
       <div className="p-6 pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1 flex-1">
@@ -74,7 +106,10 @@ export function BookingCard({
         {!showAdminActions && status === 'APPROVED' && onCancel && (
           <div className="pt-2 border-t">
             <button
-              onClick={onCancel}
+              onClick={(e) => {
+                e.stopPropagation();
+                onCancel();
+              }}
               className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
             >
               Cancel
@@ -86,16 +121,16 @@ export function BookingCard({
         {showAdminActions && status === 'PENDING' && (
           <div className="pt-2 border-t flex gap-2">
             <button
-              onClick={onApprove}
+              onClick={handleApproveClick}
               className="flex-1 px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded"
             >
-              Approve
+              View Details
             </button>
             <button
-              onClick={onReject}
-              className="flex-1 px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
+              onClick={handleRejectClick}
+              className="flex-1 px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded"
             >
-              Reject
+              Review
             </button>
           </div>
         )}
@@ -103,3 +138,4 @@ export function BookingCard({
     </div>
   );
 }
+

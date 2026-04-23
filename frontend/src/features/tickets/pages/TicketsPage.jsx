@@ -1,10 +1,11 @@
 import React, { useMemo, useState, useEffect } from 'react'
-import { MessageSquare, Paperclip, PlusCircle } from 'lucide-react'
-import { useAuth } from '../../auth/AuthContext'
+import { MessageSquare, Paperclip, PlusCircle, X, Download, MoreHorizontal } from 'lucide-react'
+import { TicketComments } from '../components/TicketComments'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
 
 // workflow shown to end users.
 const WORKFLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085'
 
 // Shared status colors for badges across this page.
 const STATUS_STYLES = {
@@ -43,13 +44,68 @@ const formatDateTime = (value) => new Date(value).toLocaleString(undefined, { da
 // const RESOURCE_OPTIONS = [...]
 
 export const TicketsPage = () => {
-    const { user } = useAuth()
-
-    // Local mock state for UI prototyping; will replace with API-backed state when endpoint is ready.
+    // Local state for tickets - loaded from API on mount
     const [tickets, setTickets] = useState([])
+    const [ticketsLoading, setTicketsLoading] = useState(true)
+    const [ticketsError, setTicketsError] = useState('')
 
     const [resourceTypes, setResourceTypes] = useState([])
     const [allAssets, setAllAssets] = useState([])
+
+    // Map a raw API TicketListItem to the shape the UI expects
+    const mapApiTicket = (t) => ({
+        id: `TCK-${t.ticketId}`,
+        title: t.title,
+        description: t.description,
+        priority: t.priority,
+        status: t.status,
+        assignedToName: t.assignedToName || '',
+        resolutionNotes: t.resolutionNotes || '',
+        rejectionReason: t.rejectionReason || '',
+        preferredContact: t.contact || '',
+        location: t.locationName || '',
+        resourceLabel: t.assetName || '',
+        resourceId: t.assetId,
+        createdAt: t.createdAt,
+        // Store full URL objects so we can render images and offer download links
+        attachments: (t.attachmentUrls || []).map(url => ({
+            name: url.substring(url.lastIndexOf('/') + 1),
+            url: `http://localhost:8085${url}`,
+            isImage: /\.(jpe?g|png|gif|webp|bmp|svg)$/i.test(url)
+        })),
+        comments: []
+    })
+
+
+    const getTicketNumericId = (ticketId) => {
+        const value = Number(String(ticketId || '').replace('TCK-', ''))
+        return Number.isNaN(value) ? null : value
+    }
+
+    const fetchMyTickets = async () => {
+        setTicketsLoading(true)
+        setTicketsError('')
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
+                credentials: 'include'
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                setTickets((data.data || []).map(mapApiTicket))
+            } else {
+                setTicketsError(data.message || 'Failed to load tickets')
+            }
+        } catch (err) {
+            console.error('Failed to fetch tickets', err)
+            setTicketsError('Network error — could not load tickets')
+        } finally {
+            setTicketsLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchMyTickets()
+    }, [])
 
     useEffect(() => {
         const loadResources = async () => {
@@ -58,7 +114,7 @@ export const TicketsPage = () => {
                 const assets = await getAllAssets();
                 setResourceTypes(types || []);
                 setAllAssets(assets || []);
-                
+
                 if (types && types.length > 0) {
                     setNewTicket(prev => ({ ...prev, category: types[0].name }));
                 }
@@ -74,9 +130,12 @@ export const TicketsPage = () => {
 
     const [filter, setFilter] = useState('ALL')
     const [selectedTicketId, setSelectedTicketId] = useState(null)
-    const [commentInput, setCommentInput] = useState('')
+    const [lightboxUrl, setLightboxUrl] = useState(null)
     const [formError, setFormError] = useState('')
     const [fileWarning, setFileWarning] = useState('')
+    const [isEditingTicket, setIsEditingTicket] = useState(false)
+    const [editTicketData, setEditTicketData] = useState(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const [newTicket, setNewTicket] = useState({
         title: '',
@@ -126,6 +185,10 @@ export const TicketsPage = () => {
         setNewFiles(files.slice(0, 3))
     }
 
+    useEffect(() => {
+        setIsEditingTicket(false);
+    }, [selectedTicketId]);
+
     const handleCreateTicket = async (event) => {
         event.preventDefault()
         setFormError('')
@@ -134,8 +197,6 @@ export const TicketsPage = () => {
             setFormError('Title and description are required to create a ticket.')
             return
         }
-
-        const selectedResource = allAssets.find((resource) => String(resource.id) === String(newTicket.resourceId))
 
         const formData = new FormData()
         formData.append('title', newTicket.title.trim())
@@ -150,7 +211,7 @@ export const TicketsPage = () => {
         })
 
         try {
-            const response = await fetch('http://localhost:8085/api/v1/tickets', {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include' // Important for auth cookies!
@@ -163,27 +224,12 @@ export const TicketsPage = () => {
                 return
             }
 
-            const ticketData = data.data; // Server response data wrapper
+            const ticketData = data.data
 
-            // Immediately create local ticket to show in UI
-            const createdTicket = {
-                id: `TCK-${ticketData.ticketId}`, // Use the returned real Database ID
-                title: ticketData.title,
-                description: ticketData.description,
-                location: selectedResource?.location?.name || '',
-                category: newTicket.category,
-                resourceId: newTicket.resourceId,
-                resourceLabel: selectedResource?.name || '',
-                priority: ticketData.priority,
-                preferredContact: ticketData.contact || '',
-                status: ticketData.status || 'OPEN',
-                createdAt: ticketData.createdAt,
-                attachments: ticketData.attachmentUrls ? ticketData.attachmentUrls.map(url => url.substring(url.lastIndexOf('/') + 1)) : [],
-                comments: []
-            }
-
-            setTickets((prev) => [createdTicket, ...prev])
-            setSelectedTicketId(createdTicket.id)
+            // Re-fetch from server so the full list stays in sync with the database
+            await fetchMyTickets()
+            // Auto-select the newly created ticket using its real DB id
+            setSelectedTicketId(`TCK-${ticketData.ticketId}`)
             setNewTicket({
                 title: '',
                 category: resourceTypes.length > 0 ? resourceTypes[0].name : '',
@@ -200,31 +246,62 @@ export const TicketsPage = () => {
         }
     }
 
-    const handleAddComment = (event) => {
+    const handleUpdateTicket = async (event) => {
         event.preventDefault()
-        if (!selectedTicket || !commentInput.trim()) {
-            return
-        }
+        if (!editTicketData) return
 
-        // Append comment locally to mimic threaded updates.
-        const newComment = {
-            id: `c-${Date.now()}`,
-            author: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'You',
-            message: commentInput.trim(),
-            createdAt: new Date().toISOString()
+        const numericId = getTicketNumericId(editTicketData.id)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    title: editTicketData.title,
+                    description: editTicketData.description,
+                    priority: editTicketData.priority,
+                    assetId: editTicketData.resourceId,
+                    contact: editTicketData.preferredContact
+                })
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                await fetchMyTickets()
+                setIsEditingTicket(false)
+            } else {
+                alert(data.message || 'Failed to update ticket')
+            }
+        } catch (error) {
+            console.error('Update error', error)
+            alert('Network error')
         }
-
-        setTickets((prev) => prev.map((ticket) => {
-            if (ticket.id !== selectedTicket.id) {
-                return ticket
-            }
-            return {
-                ...ticket,
-                comments: [...ticket.comments, newComment]
-            }
-        }))
-        setCommentInput('')
     }
+
+    const handleDeleteTicket = async (ticketId) => {
+        if (!window.confirm('Are you sure you want to delete this closed ticket? This action cannot be undone.')) return
+        
+        const numericId = getTicketNumericId(ticketId)
+        setIsDeleting(true)
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/tickets/${numericId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+            const data = await response.json()
+            if (response.ok && data.success) {
+                setSelectedTicketId(null)
+                await fetchMyTickets()
+            } else {
+                alert(data.message || 'Failed to delete ticket')
+            }
+        } catch (error) {
+            console.error('Delete error', error)
+            alert('Network error')
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
 
     return (
         <div className="space-y-6 pb-8">
@@ -368,7 +445,7 @@ export const TicketsPage = () => {
 
                 {/* Right: ticket list and selected ticket detail */}
                 <section className="xl:col-span-3 space-y-4">
-                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                    <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm min-h-96">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <h2 className="text-base font-semibold text-text-main">My Tickets</h2>
                             <div className="flex flex-wrap gap-2">
@@ -386,7 +463,23 @@ export const TicketsPage = () => {
                         </div>
 
                         <div className="mt-4 space-y-3 max-h-95 overflow-y-auto pr-1">
-                            {filteredTickets.length === 0 && (
+                            {ticketsLoading && (
+                                <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4 flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Loading your tickets…
+                                </div>
+                            )}
+
+                            {!ticketsLoading && ticketsError && (
+                                <div className="text-sm text-red-600 border border-dashed border-red-300 rounded-lg p-4">
+                                    {ticketsError}
+                                </div>
+                            )}
+
+                            {!ticketsLoading && !ticketsError && filteredTickets.length === 0 && (
                                 <div className="text-sm text-text-muted border border-dashed border-gray-300 rounded-lg p-4">
                                     No tickets in this state yet.
                                 </div>
@@ -413,6 +506,7 @@ export const TicketsPage = () => {
                                 </button>
                             ))}
                         </div>
+
                     </div>
 
                     <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
@@ -425,72 +519,197 @@ export const TicketsPage = () => {
                                         <h3 className="text-base font-semibold text-text-main">{selectedTicket.title}</h3>
                                         <p className="text-xs text-text-light">{selectedTicket.id} • {selectedTicket.location || 'No location set'}</p>
                                     </div>
-                                    <span className={`text-xs px-2.5 py-1 rounded border w-fit ${STATUS_STYLES[selectedTicket.status]}`}>
-                                        {selectedTicket.status}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        {selectedTicket.status === 'OPEN' && !isEditingTicket && (
+                                            <button 
+                                                onClick={() => {
+                                                    setIsEditingTicket(true);
+                                                    setEditTicketData({ ...selectedTicket });
+                                                }}
+                                                className="px-2 py-1 text-[10px] font-bold text-primary hover:bg-primary/10 rounded border border-primary/20"
+                                            >
+                                                EDIT TICKET
+                                            </button>
+                                        )}
+                                        {selectedTicket.status === 'CLOSED' && (
+                                            <button 
+                                                onClick={() => handleDeleteTicket(selectedTicket.id)}
+                                                disabled={isDeleting}
+                                                className="px-2 py-1 text-[10px] font-bold text-rose-600 hover:bg-rose-50 rounded border border-rose-100"
+                                            >
+                                                {isDeleting ? 'DELETING...' : 'DELETE TICKET'}
+                                            </button>
+                                        )}
+                                        <span className={`text-xs px-2.5 py-1 rounded border w-fit ${STATUS_STYLES[selectedTicket.status]}`}>
+                                            {selectedTicket.status}
+                                        </span>
+                                    </div>
                                 </div>
 
-                                <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
-                                    <p className="text-sm text-text-muted">{selectedTicket.description}</p>
-                                </div>
+                                {isEditingTicket ? (
+                                    <form onSubmit={handleUpdateTicket} className="space-y-4 bg-primary/5 p-4 rounded-lg border border-primary/10">
+                                        <div>
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Title</label>
+                                            <input 
+                                                value={editTicketData.title}
+                                                onChange={(e) => setEditTicketData({...editTicketData, title: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Description</label>
+                                            <textarea 
+                                                value={editTicketData.description}
+                                                onChange={(e) => setEditTicketData({...editTicketData, description: e.target.value})}
+                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                rows={3}
+                                            />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Priority</label>
+                                                <select 
+                                                    value={editTicketData.priority}
+                                                    onChange={(e) => setEditTicketData({...editTicketData, priority: e.target.value})}
+                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 bg-white"
+                                                >
+                                                    <option value="LOW">Low</option>
+                                                    <option value="MEDIUM">Medium</option>
+                                                    <option value="HIGH">High</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Contact</label>
+                                                <input 
+                                                    value={editTicketData.preferredContact}
+                                                    onChange={(e) => setEditTicketData({...editTicketData, preferredContact: e.target.value})}
+                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                            <button 
+                                                type="button"
+                                                onClick={() => setIsEditingTicket(false)}
+                                                className="px-4 py-2 text-xs font-bold text-text-muted hover:text-text-main transition-colors"
+                                            >
+                                                CANCEL
+                                            </button>
+                                            <button 
+                                                type="submit"
+                                                className="px-6 py-2 text-xs font-bold bg-primary text-white rounded-lg hover:bg-primary-dark transition-all"
+                                            >
+                                                SAVE CHANGES
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                                        <p className="text-sm text-text-muted">{selectedTicket.description}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.assignedToName && (
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-emerald-700">Assigned Technician</p>
+                                        <p className="text-sm text-emerald-800 mt-0.5">{selectedTicket.assignedToName}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.resolutionNotes && (
+                                    <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-emerald-700">Resolution Update</p>
+                                        <p className="text-sm text-emerald-800 mt-0.5">{selectedTicket.resolutionNotes}</p>
+                                    </div>
+                                )}
+
+                                {selectedTicket.rejectionReason && (
+                                    <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2">
+                                        <p className="text-xs font-semibold text-rose-700">Rejection Reason</p>
+                                        <p className="text-sm text-rose-800 mt-0.5">{selectedTicket.rejectionReason}</p>
+                                    </div>
+                                )}
 
                                 <div>
                                     <h4 className="text-sm font-semibold text-text-main flex items-center gap-2">
                                         <Paperclip size={15} /> Attachments
                                     </h4>
                                     {selectedTicket.attachments.length === 0 ? (
-                                        <p className="text-xs text-text-light mt-1">No images uploaded.</p>
+                                        <p className="text-xs text-text-light mt-1">No files uploaded.</p>
                                     ) : (
-                                        <ul className="mt-2 flex flex-wrap gap-2 text-xs text-text-muted">
+                                        <div className="mt-2 flex flex-wrap gap-2">
                                             {selectedTicket.attachments.map((file) => (
-                                                <li key={file} className="px-2.5 py-1 rounded-md bg-white border border-gray-200">
-                                                    {file}
-                                                </li>
+                                                file.isImage ? (
+                                                    <button
+                                                        key={file.url}
+                                                        type="button"
+                                                        title={file.name}
+                                                        onClick={() => setLightboxUrl(file.url)}
+                                                        className="relative group w-20 h-20 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:border-primary transition-colors shadow-sm"
+                                                    >
+                                                        <img
+                                                            src={file.url}
+                                                            alt={file.name}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                            <span className="text-white text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity px-1 text-center">View</span>
+                                                        </div>
+                                                    </button>
+                                                ) : (
+                                                    <a
+                                                        key={file.url}
+                                                        href={file.url}
+                                                        download={file.name}
+                                                        title={file.name}
+                                                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white border border-gray-200 hover:border-primary hover:text-primary text-xs text-text-muted transition-colors"
+                                                    >
+                                                        <Download size={12} />
+                                                        <span className="max-w-30 truncate">{file.name}</span>
+                                                    </a>
+                                                )
                                             ))}
-                                        </ul>
+                                        </div>
                                     )}
                                 </div>
 
-                                <div>
-                                    <h4 className="text-sm font-semibold text-text-main flex items-center gap-2">
-                                        <MessageSquare size={15} /> Comments
-                                    </h4>
-
-                                    <div className="mt-2 space-y-2 max-h-36 overflow-y-auto pr-1">
-                                        {selectedTicket.comments.length === 0 && (
-                                            <p className="text-xs text-text-light">No comments yet.</p>
-                                        )}
-                                        {selectedTicket.comments.map((comment) => (
-                                            <div key={comment.id} className="bg-white border border-gray-200 rounded-md p-2.5">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-xs font-semibold text-text-main">{comment.author}</span>
-                                                    <span className="text-[11px] text-text-light">{formatDateTime(comment.createdAt)}</span>
-                                                </div>
-                                                <p className="text-sm text-text-muted mt-1">{comment.message}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <form onSubmit={handleAddComment} className="mt-3 flex gap-2">
-                                        <input
-                                            value={commentInput}
-                                            onChange={(event) => setCommentInput(event.target.value)}
-                                            placeholder="Add a comment..."
-                                            className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                        />
-                                        <button
-                                            type="submit"
-                                            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary-hover"
-                                        >
-                                            Post
-                                        </button>
-                                    </form>
+                                <div className="pt-4 border-t border-gray-100">
+                                    <TicketComments 
+                                        ticketId={getTicketNumericId(selectedTicket.id)} 
+                                        ticketStatus={selectedTicket.status}
+                                    />
                                 </div>
                             </div>
                         )}
                     </div>
                 </section>
             </div>
+
+            {/* Lightbox overlay */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+                    onClick={() => setLightboxUrl(null)}
+                    onKeyDown={(e) => e.key === 'Escape' && setLightboxUrl(null)}
+                    role="dialog"
+                    aria-modal="true"
+                >
+                    <button
+                        type="button"
+                        onClick={() => setLightboxUrl(null)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        aria-label="Close image viewer"
+                    >
+                        <X size={20} />
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="Attachment preview"
+                        className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
         </div>
     )
