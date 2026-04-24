@@ -16,6 +16,8 @@ public class LocalAuthValidator {
     // Keep patterns here so frontend/backend rules stay aligned.
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     private static final Pattern PASSWORD_POLICY_PATTERN = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$");
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z\\s\\-']+$");
+    private static final Pattern UNIVERSITY_ID_PATTERN = Pattern.compile("^(IT|BS|EN)\\d{6,}$");
 
     private final UserRepository userRepository;
 
@@ -43,6 +45,15 @@ public class LocalAuthValidator {
 
         if (!EMAIL_PATTERN.matcher(email).matches()) {
             throw new IllegalArgumentException("Invalid email format");
+        }
+        if (!NAME_PATTERN.matcher(firstName).matches()) {
+            throw new IllegalArgumentException("First name cannot contain numbers or invalid characters");
+        }
+        if (!NAME_PATTERN.matcher(lastName).matches()) {
+            throw new IllegalArgumentException("Last name cannot contain numbers or invalid characters");
+        }
+        if (universityId != null && !universityId.isBlank() && !UNIVERSITY_ID_PATTERN.matcher(universityId).matches()) {
+            throw new IllegalArgumentException("ID Number must start with IT, BS, or EN followed by at least 6 digits (e.g., IT2612345)");
         }
         if (password.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters");

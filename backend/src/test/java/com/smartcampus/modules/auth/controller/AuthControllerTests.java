@@ -1,8 +1,10 @@
 package com.smartcampus.modules.auth.controller;
 
+import com.smartcampus.modules.auth.repository.RoleRepository;
 import com.smartcampus.modules.auth.repository.UserRepository;
 import com.smartcampus.modules.auth.service.AuthCookieService;
 import com.smartcampus.modules.auth.service.LocalAuthService;
+import com.smartcampus.modules.auth.service.UserService;
 import com.smartcampus.security.JwtService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,12 @@ class AuthControllerTests {
 
     @MockBean
     private JwtService jwtService;
+
+    @MockBean
+    private UserService userService;
+
+    @MockBean
+    private RoleRepository roleRepository;
 
     @Test
     void meWithoutAuthReturnsUnauthorized() throws Exception {

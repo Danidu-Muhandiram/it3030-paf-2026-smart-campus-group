@@ -23,6 +23,11 @@ public class AuthCookieService {
         this.sessionMaxAgeSeconds = sessionMaxAgeSeconds;
     }
 
+    //login cookie creation
+    //logout cookie clearing
+    //cookie security settings
+
+    //Takes a JWT token. Wraps it inside an HTTP cookie. Returns a secure cookie object
     public ResponseCookie createAuthCookie(String token) {
         // HttpOnly prevents token access from browser JavaScript.
         return ResponseCookie.from("auth_token", token)
@@ -45,7 +50,9 @@ public class AuthCookieService {
                 .build();
     }
 
+    //delete the server session cookie when a user logs out
     public ResponseCookie clearSessionCookie() {
+        //default session cookie in Spring / Java web apps is JSESSIONID
         return ResponseCookie.from("JSESSIONID", "")
                 .httpOnly(true)
                 .secure(secure)

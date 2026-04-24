@@ -54,10 +54,14 @@ public class TicketService {
                 Asset asset = assetRepository.findById(assetId)
                                 .orElseThrow(() -> new RuntimeException("Asset not found"));
 
+                if (title == null || !title.matches("^[a-zA-Z\\s\\-']+$")) {
+                    throw new RuntimeException("Ticket title cannot contain numbers");
+                }
+
                 Ticket ticket = Ticket.builder()
                                 .reportedBy(reportedBy)
                                 .asset(asset)
-                                .title(title)
+                                .title(title.trim())
                                 .description(description)
                                 .priority(priority == null ? "MEDIUM" : priority.toUpperCase())
                                 .contact(contact)
@@ -327,7 +331,11 @@ public class TicketService {
                 Asset asset = assetRepository.findById(assetId)
                                 .orElseThrow(() -> new RuntimeException("Asset not found"));
 
-                ticket.setTitle(title);
+                if (title == null || !title.matches("^[a-zA-Z\\s\\-']+$")) {
+                    throw new RuntimeException("Ticket title cannot contain numbers");
+                }
+
+                ticket.setTitle(title.trim());
                 ticket.setDescription(description);
                 ticket.setPriority(priority == null ? "MEDIUM" : priority.toUpperCase());
                 ticket.setAsset(asset);
@@ -346,8 +354,8 @@ public class TicketService {
                         throw new RuntimeException("You are not authorized to delete this ticket");
                 }
 
-                if (!"CLOSED".equalsIgnoreCase(ticket.getStatus())) {
-                        throw new RuntimeException("Only tickets in CLOSED state can be deleted");
+                if (!"CLOSED".equalsIgnoreCase(ticket.getStatus()) && !"OPEN".equalsIgnoreCase(ticket.getStatus())) {
+                        throw new RuntimeException("Only tickets in OPEN or CLOSED state can be deleted");
                 }
 
                 ticketRepository.delete(ticket);

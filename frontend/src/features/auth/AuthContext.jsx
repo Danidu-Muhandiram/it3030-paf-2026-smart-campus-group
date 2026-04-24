@@ -12,7 +12,13 @@ export const AuthProvider = ({ children }) => {
     const [error, setError] = useState(null)
 
     const refreshUser = useCallback(async () => {
-        setStatus('loading')
+        setStatus(currentStatus => {
+            if (currentStatus !== 'authenticated') {
+                return 'loading';
+            }
+            return currentStatus;
+        });
+        
         setError(null)
         try {
             const data = await authService.fetchCurrentUser()
@@ -27,14 +33,16 @@ export const AuthProvider = ({ children }) => {
                 setError(err)
             }
         } finally {
-            // Route guards should wait for this before redirecting.
             setInitialized(true)
         }
     }, [])
 
+    const updateUser = useCallback((userData) => {
+        setUser(userData);
+    }, []);
+
     const logout = useCallback(async () => {
         try {
-            // Backend clears HttpOnly cookie.
             await authService.logout()
         } finally {
             setUser(null)
@@ -52,8 +60,9 @@ export const AuthProvider = ({ children }) => {
         error,
         initialized,
         refreshUser,
+        updateUser,
         logout
-    }), [user, status, error, initialized, refreshUser, logout])
+    }), [user, status, error, initialized, refreshUser, updateUser, logout])
 
     return (
         <AuthContext.Provider value={value}>

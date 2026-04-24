@@ -22,6 +22,7 @@ export const RegisterPage = () => {
         password: '',
         confirmPassword: ''
     });
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const { status, refreshUser } = useAuth();
     const navigate = useNavigate();
     // Keep behavior consistent with 
@@ -330,17 +331,20 @@ export const RegisterPage = () => {
                             <div className="flex items-center h-4 mt-0.5">
                                 <input
                                     type="checkbox"
+                                    id="terms"
+                                    checked={agreedToTerms}
+                                    onChange={(e) => setAgreedToTerms(e.target.checked)}
                                     className="w-4 h-4 border-gray-300 rounded text-primary focus:ring-primary cursor-pointer"
                                 />
                             </div>
-                            <label className="text-sm text-text-muted leading-5">
+                            <label htmlFor="terms" className="text-sm text-text-muted leading-5 cursor-pointer">
                                 I agree to the <a href="#" className="font-medium text-primary hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-primary hover:underline">Privacy Policy</a>
                             </label>
                         </div>
 
                         <button
                             type="submit"
-                            disabled={isSubmitting || !isFormValid}
+                            disabled={isSubmitting || !isFormValid || !agreedToTerms}
                             className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-2.5 px-4 rounded-lg mt-2.5 flex justify-center items-center gap-2 transition-all active:scale-[0.98] shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {isSubmitting ? 'Creating account...' : 'Create Account'}

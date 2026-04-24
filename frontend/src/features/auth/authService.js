@@ -29,5 +29,10 @@ export const authService = {
     logout: async () => {
         // Server responds with Set-Cookie to expire auth_token.
         await axiosInstance.post('/auth/logout')
+    },
+
+    updateProfile: async (payload) => {
+        const response = await axiosInstance.patch('/auth/me', payload)
+        return response.data
     }
 }

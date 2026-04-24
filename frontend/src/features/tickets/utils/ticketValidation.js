@@ -26,6 +26,8 @@ export const validateTicketForm = (data, files) => {
         errors.title = `Title must be at least ${TICKET_CONSTRAINTS.TITLE_MIN} characters`;
     } else if (data.title.trim().length > TICKET_CONSTRAINTS.TITLE_MAX) {
         errors.title = `Title must not exceed ${TICKET_CONSTRAINTS.TITLE_MAX} characters`;
+    } else if (!/^[a-zA-Z\s\-']+$/.test(data.title.trim())) {
+        errors.title = 'Title cannot contain numbers';
     }
 
     // Description validation
@@ -80,6 +82,8 @@ export const validateEditTicketForm = (data) => {
         errors.title = 'Title is required';
     } else if (data.title.trim().length < TICKET_CONSTRAINTS.TITLE_MIN) {
         errors.title = `Title must be at least ${TICKET_CONSTRAINTS.TITLE_MIN} characters`;
+    } else if (!/^[a-zA-Z\s\-']+$/.test(data.title.trim())) {
+        errors.title = 'Title cannot contain numbers';
     }
 
     if (!data.description || !data.description.trim()) {

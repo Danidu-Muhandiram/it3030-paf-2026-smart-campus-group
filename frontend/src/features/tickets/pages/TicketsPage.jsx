@@ -340,7 +340,7 @@ export const TicketsPage = () => {
     }
 
     const handleDeleteTicket = async (ticketId) => {
-        if (!window.confirm('Are you sure you want to delete this closed ticket? This action cannot be undone.')) return
+        if (!window.confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) return
         
         const numericId = getTicketNumericId(ticketId)
         setIsDeleting(true)
@@ -627,7 +627,7 @@ export const TicketsPage = () => {
                                                 EDIT TICKET
                                             </button>
                                         )}
-                                        {selectedTicket.status === 'CLOSED' && (
+                                        {(selectedTicket.status === 'CLOSED' || selectedTicket.status === 'OPEN') && (
                                             <button 
                                                 onClick={() => handleDeleteTicket(selectedTicket.id)}
                                                 disabled={isDeleting}
