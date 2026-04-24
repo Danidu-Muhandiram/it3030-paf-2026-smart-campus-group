@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { MessageSquare, Paperclip, PlusCircle, X, Download, MoreHorizontal } from 'lucide-react'
 import { TicketComments } from '../components/TicketComments'
 import { getAllAssets, getAllResourceTypes } from '../../../services/resourceService'
+import { validateTicketForm, validateEditTicketForm } from '../utils/ticketValidation'
 
 // workflow shown to end users.
 const WORKFLOW = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED', 'REJECTED']
@@ -131,7 +132,8 @@ export const TicketsPage = () => {
     const [filter, setFilter] = useState('ALL')
     const [selectedTicketId, setSelectedTicketId] = useState(null)
     const [lightboxUrl, setLightboxUrl] = useState(null)
-    const [formError, setFormError] = useState('')
+    const [errors, setErrors] = useState({})
+    const [editErrors, setEditErrors] = useState({})
     const [fileWarning, setFileWarning] = useState('')
     const [isEditingTicket, setIsEditingTicket] = useState(false)
     const [editTicketData, setEditTicketData] = useState(null)
@@ -173,16 +175,68 @@ export const TicketsPage = () => {
             }
             return updated;
         })
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
     }
+
+    const handleBlur = (event) => {
+        const { name } = event.target;
+        const validationErrors = validateTicketForm(newTicket, newFiles);
+        if (validationErrors[name]) {
+            setErrors(prev => ({ ...prev, [name]: validationErrors[name] }));
+        } else {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
+
+    const handleEditBlur = (event) => {
+        const { name } = event.target;
+        const validationErrors = validateEditTicketForm(editTicketData);
+        if (validationErrors[name]) {
+            setEditErrors(prev => ({ ...prev, [name]: validationErrors[name] }));
+        } else {
+            setEditErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
 
     const handleFilesChange = (event) => {
         const files = Array.from(event.target.files || [])
+        let processedFiles = files;
+        
         if (files.length > 3) {
             setFileWarning('Only the first 3 images were selected (max 3).')
+            processedFiles = files.slice(0, 3);
         } else {
             setFileWarning('')
         }
-        setNewFiles(files.slice(0, 3))
+        
+        setNewFiles(processedFiles)
+        
+        // Immediate validation for files
+        const validationErrors = validateTicketForm(newTicket, processedFiles);
+        if (validationErrors.files) {
+            setErrors(prev => ({ ...prev, files: validationErrors.files }));
+        } else {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.files;
+                return newErrors;
+            });
+        }
     }
 
     useEffect(() => {
@@ -191,10 +245,11 @@ export const TicketsPage = () => {
 
     const handleCreateTicket = async (event) => {
         event.preventDefault()
-        setFormError('')
+        setErrors({})
 
-        if (!newTicket.title.trim() || !newTicket.description.trim()) {
-            setFormError('Title and description are required to create a ticket.')
+        const validationErrors = validateTicketForm(newTicket, newFiles)
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors)
             return
         }
 
@@ -220,7 +275,7 @@ export const TicketsPage = () => {
             const data = await response.json()
             
             if (!response.ok || !data.success) {
-                setFormError(data.message || data.error || 'Failed to create ticket')
+                setErrors({ server: data.message || data.error || 'Failed to create ticket' })
                 return
             }
 
@@ -242,13 +297,20 @@ export const TicketsPage = () => {
             setFileWarning('')
         } catch (error) {
             console.error('Ticket creation error', error)
-            setFormError('Network error occurred while submitting ticket')
+            setErrors({ server: 'Network error occurred while submitting ticket' })
         }
     }
 
     const handleUpdateTicket = async (event) => {
         event.preventDefault()
         if (!editTicketData) return
+        setEditErrors({})
+
+        const validationErrors = validateEditTicketForm(editTicketData)
+        if (Object.keys(validationErrors).length > 0) {
+            setEditErrors(validationErrors)
+            return
+        }
 
         const numericId = getTicketNumericId(editTicketData.id)
         try {
@@ -327,9 +389,15 @@ export const TicketsPage = () => {
                                 name="title"
                                 value={newTicket.title}
                                 onChange={handleNewInputChange}
+                                onBlur={handleBlur}
                                 placeholder="Projector not turning on"
-                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
+                                    errors.title 
+                                    ? 'border-rose-300 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                    : 'border-gray-200 focus:ring-primary/20 focus:border-primary'
+                                }`}
                             />
+                            {errors.title && <p className="mt-1 text-[10px] font-medium text-rose-600">{errors.title}</p>}
                         </div>
 
                         <div>
@@ -338,7 +406,12 @@ export const TicketsPage = () => {
                                 name="category"
                                 value={newTicket.category}
                                 onChange={handleNewInputChange}
-                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                onBlur={handleBlur}
+                                className={`mt-1 w-full px-3 py-2 rounded-lg border bg-white text-sm focus:outline-none focus:ring-2 transition-all ${
+                                    errors.category 
+                                    ? 'border-rose-300 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                    : 'border-gray-200 focus:ring-primary/20 focus:border-primary'
+                                }`}
                             >
                                 {resourceTypes.map((type) => (
                                     <option key={type.id} value={type.name}>
@@ -346,6 +419,7 @@ export const TicketsPage = () => {
                                     </option>
                                 ))}
                             </select>
+                            {errors.category && <p className="mt-1 text-[10px] font-medium text-rose-600">{errors.category}</p>}
                         </div>
 
                         <div>
@@ -354,15 +428,22 @@ export const TicketsPage = () => {
                                 name="resourceId"
                                 value={newTicket.resourceId}
                                 onChange={handleNewInputChange}
-                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                onBlur={handleBlur}
+                                className={`mt-1 w-full px-3 py-2 rounded-lg border bg-white text-sm focus:outline-none focus:ring-2 transition-all ${
+                                    errors.resourceId 
+                                    ? 'border-rose-300 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                    : 'border-gray-200 focus:ring-primary/20 focus:border-primary'
+                                }`}
                                 disabled={!newTicket.category}
                             >
+                                <option value="">Select a resource</option>
                                 {allAssets.filter(r => r.type?.name === newTicket.category).map((resource) => (
                                     <option key={resource.id} value={resource.id}>
                                         {resource.name} {resource.location && `(${resource.location.name})`}
                                     </option>
                                 ))}
                             </select>
+                            {errors.resourceId && <p className="mt-1 text-[10px] font-medium text-rose-600">{errors.resourceId}</p>}
                         </div>
 
                         <div>
@@ -391,9 +472,15 @@ export const TicketsPage = () => {
                                 rows={4}
                                 value={newTicket.description}
                                 onChange={handleNewInputChange}
+                                onBlur={handleBlur}
                                 placeholder="Describe the issue clearly..."
-                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
+                                    errors.description 
+                                    ? 'border-rose-300 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                    : 'border-gray-200 focus:ring-primary/20 focus:border-primary'
+                                }`}
                             />
+                            {errors.description && <p className="mt-1 text-[10px] font-medium text-rose-600">{errors.description}</p>}
                         </div>
 
                         <div>
@@ -403,9 +490,15 @@ export const TicketsPage = () => {
                                 type="tel"
                                 value={newTicket.preferredContact}
                                 onChange={handleNewInputChange}
+                                onBlur={handleBlur}
                                 placeholder="+94 xxx xxxx"
-                                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                className={`mt-1 w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all ${
+                                    errors.preferredContact 
+                                    ? 'border-rose-300 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                    : 'border-gray-200 focus:ring-primary/20 focus:border-primary'
+                                }`}
                             />
+                            {errors.preferredContact && <p className="mt-1 text-[10px] font-medium text-rose-600">{errors.preferredContact}</p>}
                         </div>
 
                         <div>
@@ -418,8 +511,11 @@ export const TicketsPage = () => {
                                 multiple
                                 accept="image/*"
                                 onChange={handleFilesChange}
-                                className="mt-1 block w-full text-xs text-text-muted file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-primary/10 file:text-primary"
+                                className={`mt-1 block w-full text-xs text-text-muted file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-primary/10 file:text-primary ${
+                                    errors.files ? 'border border-dashed border-rose-300 bg-rose-50/30 p-2 rounded-lg' : ''
+                                }`}
                             />
+                            {errors.files && <p className="mt-1 text-[10px] font-medium text-rose-600">{errors.files}</p>}
                             {newFiles.length > 0 && (
                                 <ul className="mt-2 flex flex-wrap gap-2">
                                     {newFiles.map((file) => (
@@ -431,7 +527,7 @@ export const TicketsPage = () => {
                             )}
                         </div>
 
-                        {formError && <p className="text-xs text-red-600">{formError}</p>}
+                        {errors.server && <p className="text-xs text-rose-600 bg-rose-50 p-2 rounded border border-rose-100">{errors.server}</p>}
                         {fileWarning && <p className="text-xs text-amber-700">{fileWarning}</p>}
 
                         <button
@@ -551,19 +647,39 @@ export const TicketsPage = () => {
                                         <div>
                                             <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Title</label>
                                             <input 
+                                                name="title"
                                                 value={editTicketData.title}
-                                                onChange={(e) => setEditTicketData({...editTicketData, title: e.target.value})}
-                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                onChange={(e) => {
+                                                    setEditTicketData({...editTicketData, title: e.target.value});
+                                                    if (editErrors.title) setEditErrors(prev => ({...prev, title: null}));
+                                                }}
+                                                onBlur={handleEditBlur}
+                                                className={`w-full mt-1 px-3 py-2 text-sm rounded-lg border outline-none transition-all ${
+                                                    editErrors.title 
+                                                    ? 'border-rose-300 focus:ring-2 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                                    : 'border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary'
+                                                }`}
                                             />
+                                            {editErrors.title && <p className="mt-1 text-[10px] font-medium text-rose-600 uppercase">{editErrors.title}</p>}
                                         </div>
                                         <div>
                                             <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Description</label>
                                             <textarea 
+                                                name="description"
                                                 value={editTicketData.description}
-                                                onChange={(e) => setEditTicketData({...editTicketData, description: e.target.value})}
-                                                className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                onChange={(e) => {
+                                                    setEditTicketData({...editTicketData, description: e.target.value});
+                                                    if (editErrors.description) setEditErrors(prev => ({...prev, description: null}));
+                                                }}
+                                                onBlur={handleEditBlur}
+                                                className={`w-full mt-1 px-3 py-2 text-sm rounded-lg border outline-none transition-all ${
+                                                    editErrors.description 
+                                                    ? 'border-rose-300 focus:ring-2 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                                    : 'border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary'
+                                                }`}
                                                 rows={3}
                                             />
+                                            {editErrors.description && <p className="mt-1 text-[10px] font-medium text-rose-600 uppercase">{editErrors.description}</p>}
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
@@ -581,10 +697,20 @@ export const TicketsPage = () => {
                                             <div>
                                                 <label className="text-[10px] font-bold text-primary uppercase tracking-wider">Contact</label>
                                                 <input 
+                                                    name="preferredContact"
                                                     value={editTicketData.preferredContact}
-                                                    onChange={(e) => setEditTicketData({...editTicketData, preferredContact: e.target.value})}
-                                                    className="w-full mt-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                                                    onChange={(e) => {
+                                                        setEditTicketData({...editTicketData, preferredContact: e.target.value});
+                                                        if (editErrors.preferredContact) setEditErrors(prev => ({...prev, preferredContact: null}));
+                                                    }}
+                                                    onBlur={handleEditBlur}
+                                                    className={`w-full mt-1 px-3 py-2 text-sm rounded-lg border outline-none transition-all ${
+                                                        editErrors.preferredContact 
+                                                        ? 'border-rose-300 focus:ring-2 focus:ring-rose-200 focus:border-rose-500 bg-rose-50/30' 
+                                                        : 'border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary'
+                                                    }`}
                                                 />
+                                                {editErrors.preferredContact && <p className="mt-1 text-[10px] font-medium text-rose-600 uppercase">{editErrors.preferredContact}</p>}
                                             </div>
                                         </div>
                                         <div className="flex justify-end gap-2 pt-2">
