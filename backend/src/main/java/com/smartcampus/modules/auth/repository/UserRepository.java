@@ -8,6 +8,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+    // To avoid NullPointerException and handle missing data safely
     Optional<User> findByEmail(String email);
+
     java.util.List<User> findByRoleName(String roleName);
 }

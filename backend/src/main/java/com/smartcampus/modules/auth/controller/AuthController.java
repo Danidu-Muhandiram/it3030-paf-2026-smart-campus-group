@@ -2,10 +2,12 @@ package com.smartcampus.modules.auth.controller;
 
 import com.smartcampus.modules.auth.dto.LocalLoginRequest;
 import com.smartcampus.modules.auth.dto.LocalRegisterRequest;
+import com.smartcampus.modules.auth.dto.UserUpdateRequest;
 import com.smartcampus.modules.auth.entity.User;
 import com.smartcampus.modules.auth.repository.UserRepository;
 import com.smartcampus.modules.auth.service.AuthCookieService;
 import com.smartcampus.modules.auth.service.LocalAuthService;
+import com.smartcampus.modules.auth.service.UserService;
 import com.smartcampus.security.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,21 +29,23 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-
+    // dependencies injected by Spring
     private final UserRepository userRepository;
     private final AuthCookieService authCookieService;
     private final LocalAuthService localAuthService;
+    private final UserService userService;
     private final JwtService jwtService;
 
     public AuthController(
             UserRepository userRepository,
             AuthCookieService authCookieService,
             LocalAuthService localAuthService,
-            JwtService jwtService
-    ) {
+            UserService userService,
+            JwtService jwtService) {
         this.userRepository = userRepository;
         this.authCookieService = authCookieService;
         this.localAuthService = localAuthService;
+        this.userService = userService;
         this.jwtService = jwtService;
     }
 
@@ -57,28 +62,32 @@ public class AuthController {
 
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
-        }
-
-        String email = null;
-        Object principal = authentication.getPrincipal();
-        // OAuth2 principal set in attributes 
-        // while getName() can be provider subject.
-        if (principal instanceof OAuth2User oauth2User) {
-            email = oauth2User.getAttribute("email");
-        }
-        // JWT-authenticated requests resolve email via getName().
-        if (email == null || email.isBlank()) {
-            email = authentication.getName();
-        }
-        if (email == null || email.isBlank()) {
+        String email = getEmailFromAuthentication(authentication);
+        if (email == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
         }
 
         return userRepository.findByEmail(email)
                 .<ResponseEntity<?>>map(user -> ResponseEntity.ok(toDto(user)))
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found")));
+                .orElseGet(
+                        () -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found")));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<?> updateProfile(@RequestBody UserUpdateRequest updateRequest, Authentication authentication) {
+        String email = getEmailFromAuthentication(authentication);
+        if (email == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
+        }
+
+        try {
+            User updatedUser = userService.updateProfile(email, updateRequest);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Profile updated successfully",
+                    "user", toDto(updatedUser)));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", ex.getMessage()));
+        }
     }
 
     @PostMapping("/public/register")
@@ -89,12 +98,11 @@ public class AuthController {
             String token = jwtService.generateToken(user);
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                // JWT is returned via HttpOnly cookie for browser-based auth.
+                    // JWT is returned via HttpOnly cookie for browser-based auth.
                     .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
                     .body(Map.of(
                             "message", "Registration successful",
-                            "user", toDto(user)
-                    ));
+                            "user", toDto(user)));
         } catch (IllegalStateException ex) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("message", ex.getMessage()));
         } catch (IllegalArgumentException ex) {
@@ -110,12 +118,11 @@ public class AuthController {
             String token = jwtService.generateToken(user);
 
             return ResponseEntity.ok()
-                // Issue fresh auth cookie on every successful login.
+                    // Issue fresh auth cookie on every successful login.
                     .header(HttpHeaders.SET_COOKIE, authCookieService.createAuthCookie(token).toString())
                     .body(Map.of(
                             "message", "Login successful",
-                            "user", toDto(user)
-                    ));
+                            "user", toDto(user)));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", ex.getMessage()));
         }
@@ -129,8 +136,8 @@ public class AuthController {
 
         // Clear HttpOnly auth cookie on the client.
         return ResponseEntity.ok()
-            .header(HttpHeaders.SET_COOKIE, authCookieService.clearAuthCookie().toString())
-            .header(HttpHeaders.SET_COOKIE, authCookieService.clearSessionCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, authCookieService.clearAuthCookie().toString())
+                .header(HttpHeaders.SET_COOKIE, authCookieService.clearSessionCookie().toString())
                 .body(Map.of("message", "Logged out"));
     }
 
@@ -145,5 +152,18 @@ public class AuthController {
         dto.put("profilePicture", user.getProfilePicture());
         dto.put("status", user.getStatus());
         return dto;
+    }
+
+    private String getEmailFromAuthentication(Authentication authentication) {
+        if (authentication == null) return null;
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof OAuth2User oauth2User) {
+            return oauth2User.getAttribute("email");
+        }
+
+        // Standard string principal (JWT) or local authentication name.
+        String email = authentication.getName();
+        return (email == null || email.isBlank()) ? null : email;
     }
 }
