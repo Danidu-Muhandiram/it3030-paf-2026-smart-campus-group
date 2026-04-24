@@ -60,8 +60,10 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("url", oauthUrl));
     }
 
+    //Return the currently authenticated user's profile information.
     @GetMapping("/me")
     public ResponseEntity<?> me(Authentication authentication) {
+        //extracts the user's email
         String email = getEmailFromAuthentication(authentication);
         if (email == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Unauthorized"));
@@ -73,6 +75,7 @@ public class AuthController {
                         () -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "User not found")));
     }
 
+    //update the currently logged-in user’s profile
     @PatchMapping("/me")
     public ResponseEntity<?> updateProfile(@RequestBody UserUpdateRequest updateRequest, Authentication authentication) {
         String email = getEmailFromAuthentication(authentication);
@@ -110,6 +113,8 @@ public class AuthController {
         }
     }
 
+    //handles user registration (signup) and immediately
+    // logs the user in by creating a JWT cookie.
     @PostMapping("/public/login")
     public ResponseEntity<Map<String, Object>> login(@RequestBody LocalLoginRequest request) {
         try {
@@ -128,6 +133,8 @@ public class AuthController {
         }
     }
 
+    //endpoint handles user logout, 
+    // and it clears both the server session and authentication cookies
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(HttpServletRequest request) {
         if (request.getSession(false) != null) {

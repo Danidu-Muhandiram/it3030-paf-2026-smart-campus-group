@@ -1,5 +1,7 @@
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,100}$/
+const NAME_REGEX = /^[a-zA-Z\s\-']+$/
+const UNIVERSITY_ID_REGEX = /^(IT|BS|EN)\d{6,}$/
 
 export const getPasswordStrength = (password) => {
     // This is only a UX hint for password security; all secured in backend
@@ -32,12 +34,16 @@ export const validateRegisterForm = (formData) => {
         errors.firstName = 'First name is required'
     } else if (firstName.length > 50) {
         errors.firstName = 'First name must be at most 50 characters'
+    } else if (!NAME_REGEX.test(firstName)) {
+        errors.firstName = 'First name cannot contain numbers'
     }
 
     if (!lastName) {
         errors.lastName = 'Last name is required'
     } else if (lastName.length > 50) {
         errors.lastName = 'Last name must be at most 50 characters'
+    } else if (!NAME_REGEX.test(lastName)) {
+        errors.lastName = 'Last name cannot contain numbers'
     }
 
     if (!email) {
@@ -48,8 +54,10 @@ export const validateRegisterForm = (formData) => {
         errors.email = 'Enter a valid email address'
     }
 
-    if (universityId.length > 50) {
-        errors.universityId = 'ID number must be at most 50 characters'
+    if (universityId && universityId.length > 10) {
+        errors.universityId = 'ID number must be at most 10 characters'
+    } else if (universityId && !UNIVERSITY_ID_REGEX.test(universityId)) {
+        errors.universityId = 'ID Number must start with IT, BS, or EN followed by at least 6 digits'
     }
 
     if (!password) {

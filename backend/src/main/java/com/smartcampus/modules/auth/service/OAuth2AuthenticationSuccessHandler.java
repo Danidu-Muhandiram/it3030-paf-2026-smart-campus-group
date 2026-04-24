@@ -50,8 +50,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication)
             throws IOException, ServletException {
 
+        //get google user info
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-
+        //extract data
         String email = oauth2User.getAttribute("email");
         String fullName = oauth2User.getAttribute("name");
         String providerId = oauth2User.getAttribute("sub");
@@ -74,6 +75,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String resolvedFirstName = "User";
         String resolvedLastName = "";
         if (fullName != null && !fullName.isBlank()) {
+            //Split name into first and last 
             String[] parts = fullName.trim().split("\\s+", 2);
             resolvedFirstName = parts[0];
             resolvedLastName = parts.length > 1 ? parts[1] : "";
@@ -103,7 +105,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                         existing.setRole(defaultRole);
                     }
                     return existing;
-                })
+                })//create new user if not found
                 .orElseGet(() -> User.builder()
                         .email(email)
                         .firstName(firstName)

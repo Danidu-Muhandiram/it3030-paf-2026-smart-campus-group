@@ -21,10 +21,16 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+            if (!request.getFirstName().matches("^[a-zA-Z\\s\\-']+$")) {
+                throw new IllegalArgumentException("First name cannot contain numbers");
+            }
             user.setFirstName(request.getFirstName());
         }
 
         if (request.getLastName() != null && !request.getLastName().isBlank()) {
+            if (!request.getLastName().matches("^[a-zA-Z\\s\\-']+$")) {
+                throw new IllegalArgumentException("Last name cannot contain numbers");
+            }
             user.setLastName(request.getLastName());
         }
 
