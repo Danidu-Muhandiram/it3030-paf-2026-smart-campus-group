@@ -12,6 +12,7 @@ import com.smartcampus.modules.tickets.entity.TicketAttachment;
 import com.smartcampus.modules.tickets.entity.TicketComment;
 import com.smartcampus.modules.tickets.repository.TicketCommentRepository;
 import com.smartcampus.modules.tickets.repository.TicketRepository;
+import com.smartcampus.modules.notifications.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,7 @@ public class TicketService {
         private final TicketCommentRepository ticketCommentRepository;
         private final AssetRepository assetRepository;
         private final UserRepository userRepository;
+        private final NotificationService notificationService;
 
         @Value("${app.upload.dir:uploads}")
         private String uploadDir;
@@ -101,6 +103,19 @@ public class TicketService {
                 }
 
                 Ticket savedTicket = ticketRepository.save(ticket);
+
+                // Notify Reporter
+                notificationService.createNotification(reportedBy, 
+                    "Ticket TCK-" + savedTicket.getId() + " created successfully: " + title, 
+                    "TCK-" + savedTicket.getId());
+
+                // Notify Admins
+                List<User> admins = userRepository.findByRoleName("ADMIN");
+                for (User admin : admins) {
+                    notificationService.createNotification(admin, 
+                        "New ticket TCK-" + savedTicket.getId() + " submitted by " + reportedBy.getFirstName(), 
+                        "TCK-" + savedTicket.getId());
+                }
 
                 return mapToTicketResponse(savedTicket);
         }
@@ -167,6 +182,20 @@ public class TicketService {
                 ticket.setRejectionReason(null);
 
                 Ticket savedTicket = ticketRepository.save(ticket);
+                
+                // Notify Reporter about status change
+                notificationService.createNotification(savedTicket.getReportedBy(), 
+                    "Ticket TCK-" + savedTicket.getId() + " status updated to IN_PROGRESS (Assigned)", 
+                    "TCK-" + savedTicket.getId());
+
+                // Notify all Technicians
+                List<User> technicians = userRepository.findByRoleName("TECHNICIAN");
+                for (User technician : technicians) {
+                    notificationService.createNotification(technician, 
+                        "New ticket TCK-" + savedTicket.getId() + " assigned to technician pool", 
+                        "TCK-" + savedTicket.getId());
+                }
+
                 return mapToListItem(savedTicket);
         }
 
@@ -187,6 +216,12 @@ public class TicketService {
 
                 ticket.setStatus("IN_PROGRESS");
                 Ticket savedTicket = ticketRepository.save(ticket);
+
+                // Notify Reporter about status change
+                notificationService.createNotification(savedTicket.getReportedBy(), 
+                    "Ticket TCK-" + savedTicket.getId() + " status updated to IN_PROGRESS", 
+                    "TCK-" + savedTicket.getId());
+
                 return mapToListItem(savedTicket);
         }
 
@@ -207,6 +242,12 @@ public class TicketService {
                 ticket.setResolvedAt(LocalDateTime.now());
 
                 Ticket savedTicket = ticketRepository.save(ticket);
+
+                // Notify Reporter about status change
+                notificationService.createNotification(savedTicket.getReportedBy(), 
+                    "Ticket TCK-" + savedTicket.getId() + " status updated to RESOLVED", 
+                    "TCK-" + savedTicket.getId());
+
                 return mapToListItem(savedTicket);
         }
 
@@ -260,6 +301,12 @@ public class TicketService {
                 }
 
                 Ticket savedTicket = ticketRepository.save(ticket);
+
+                // Notify Reporter about status change
+                notificationService.createNotification(savedTicket.getReportedBy(), 
+                    "Ticket TCK-" + savedTicket.getId() + " status updated to " + newStatus, 
+                    "TCK-" + savedTicket.getId());
+
                 return mapToListItem(savedTicket);
         }
 
