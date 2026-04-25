@@ -44,6 +44,7 @@ public class TicketService {
         @Value("${app.upload.dir:uploads}")
         private String uploadDir;
 
+        //create tickets
         @Transactional
         public TicketResponse createTicket(String email, String title, String description, String priority,
                         Long assetId, String contact, MultipartFile[] files) {
@@ -169,6 +170,7 @@ public class TicketService {
                                 .collect(Collectors.toList());
         }
 
+        // Admin can assign an OPEN ticket to the technician pool, which changes status to IN_PROGRESS and makes it visible on the technician dashboard.
         @Transactional
         public TicketListItem assignForTechnicianDashboard(Long ticketId) {
                 Ticket ticket = ticketRepository.findById(ticketId)
@@ -430,6 +432,7 @@ public class TicketService {
                 return toTicketCommentResponse(savedComment);
         }
 
+        // Only allow users to edit their own comments, and only if the parent ticket is still open.
         @Transactional
         public TicketCommentResponse updateComment(String email, Long ticketId, Long commentId, String commentText) {
                 Ticket ticket = getAccessibleTicket(ticketId, email);
@@ -439,7 +442,8 @@ public class TicketService {
                 TicketComment updatedComment = ticketCommentRepository.save(comment);
                 return toTicketCommentResponse(updatedComment);
         }
-
+        
+        // Only allow users to delete their own comments, and only if the parent ticket is still open.
         @Transactional
         public void deleteComment(String email, Long ticketId, Long commentId) {
                 Ticket ticket = getAccessibleTicket(ticketId, email);

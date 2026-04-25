@@ -83,6 +83,7 @@ export const TicketsPage = () => {
         return Number.isNaN(value) ? null : value
     }
 
+    //fetch tickets
     const fetchMyTickets = async () => {
         setTicketsLoading(true)
         setTicketsError('')
@@ -104,6 +105,7 @@ export const TicketsPage = () => {
         }
     }
 
+    // Fetch resource types and assets for the dropdowns
     useEffect(() => {
         fetchMyTickets()
     }, [])
@@ -148,6 +150,7 @@ export const TicketsPage = () => {
         preferredContact: ''
     })
     const [newFiles, setNewFiles] = useState([])
+    // Derived state for filtered tickets and selected ticket details
 
     const filteredTickets = useMemo(() => {
         if (filter === 'ALL') {

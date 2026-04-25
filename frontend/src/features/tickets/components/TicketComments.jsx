@@ -27,10 +27,12 @@ export const TicketComments = ({ ticketId, ticketStatus }) => {
         }
     }, [ticketId]);
 
+    // Fetch comments when component mounts or ticketId changes
     useEffect(() => {
         fetchComments();
     }, [fetchComments]);
 
+    // Handle adding a new comment
     const handleAdd = async (e) => {
         if (e) e.preventDefault();
         if (!newComment.trim() || submitting || isClosed) return;
@@ -51,6 +53,7 @@ export const TicketComments = ({ ticketId, ticketStatus }) => {
         }
     };
 
+    // Handle Enter key for submitting new comment (without Shift)
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -58,6 +61,8 @@ export const TicketComments = ({ ticketId, ticketStatus }) => {
         }
     };
 
+    // Handle updating an existing comment
+    // Only the author can edit, and only if the ticket is not closed
     const handleUpdate = async (commentId) => {
         if (!editValue.trim() || isClosed) return;
         try {
@@ -71,6 +76,8 @@ export const TicketComments = ({ ticketId, ticketStatus }) => {
         }
     };
 
+    // Handle deleting a comment
+    // Only the author can delete, and only if the ticket is not closed
     const handleDelete = async (commentId) => {
         if (isClosed) return;
         if (!window.confirm('Delete this comment?')) return;
