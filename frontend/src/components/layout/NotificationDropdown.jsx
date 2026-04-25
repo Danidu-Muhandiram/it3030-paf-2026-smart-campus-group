@@ -4,6 +4,9 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8085';
 
+//notofication dropdown component for the bell icon in the header, 
+// shows a list of notifications with options to mark as read or mark all as read. 
+// It also polls for unread count every 30 seconds to update the badge count on the bell icon.
 export const NotificationDropdown = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState([]);
@@ -28,6 +31,7 @@ export const NotificationDropdown = () => {
         }
     };
 
+    // Fetch the count of unread notifications
     const fetchUnreadCount = async () => {
         try {
             console.log('Fetching unread count...');
@@ -43,6 +47,7 @@ export const NotificationDropdown = () => {
         }
     };
 
+    // Initial fetch of unread count and set up polling
     useEffect(() => {
         fetchUnreadCount();
         // Polling every 30 seconds for simplicity as requested
@@ -57,6 +62,7 @@ export const NotificationDropdown = () => {
         setIsOpen(!isOpen);
     };
 
+    // Mark a single notification as read
     const markAsRead = async (id) => {
         try {
             await axios.put(`${API_BASE_URL}/api/v1/notifications/${id}/read`, {}, {
@@ -69,6 +75,7 @@ export const NotificationDropdown = () => {
         }
     };
 
+    // Mark all notifications as read
     const markAllAsRead = async () => {
         try {
             await axios.put(`${API_BASE_URL}/api/v1/notifications/read-all`, {}, {
@@ -81,6 +88,7 @@ export const NotificationDropdown = () => {
         }
     };
 
+    // Utility function to format time since notification was created
     const formatTime = (dateString) => {
         const date = new Date(dateString);
         const now = new Date();

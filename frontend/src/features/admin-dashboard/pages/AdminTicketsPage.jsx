@@ -22,6 +22,7 @@ const formatDateTime = (value) => {
     return new Date(value).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 };
 
+// Admin dashboard page for managing maintenance tickets
 export const AdminTicketsPage = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,10 +31,13 @@ export const AdminTicketsPage = () => {
     const [filter, setFilter] = useState('ALL');
     
     // Rejection state
+    // When admin clicks "Reject", we show a textarea to enter rejection 
+    // reason before confirming
     const [isRejecting, setIsRejecting] = useState(false);
     const [rejectionReason, setRejectionReason] = useState('');
     const [actionLoading, setActionLoading] = useState(false);
 
+    // Fetch all tickets for admin view
     const fetchTickets = async () => {
         setLoading(true);
         setError('');
@@ -53,10 +57,12 @@ export const AdminTicketsPage = () => {
         }
     };
 
+    // Fetch tickets when component mounts
     useEffect(() => {
         fetchTickets();
     }, []);
 
+    // Filtered tickets based on selected status filter
     const filteredTickets = useMemo(() => {
         if (filter === 'ALL') return tickets;
         return tickets.filter(t => t.status === filter);
@@ -66,6 +72,7 @@ export const AdminTicketsPage = () => {
         return tickets.find(t => t.ticketId === selectedTicketId) || null;
     }, [tickets, selectedTicketId]);
 
+    // Handle status updates (Resolve, Close, Reject)
     const handleUpdateStatus = async (status, notes = null, reason = null) => {
         if (!selectedTicketId) return;
         
@@ -93,11 +100,13 @@ export const AdminTicketsPage = () => {
         }
     };
 
+    // Handle assigning a technician to the ticket (moves status from OPEN to IN_PROGRESS)
     const handleAssignTechnician = async () => {
         if (!selectedTicketId) {
             return;
         }
 
+        // For simplicity, we assume the backend will assign the next available technician automatically
         setActionLoading(true);
         try {
             const response = await assignTicket(selectedTicketId);
