@@ -1,8 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { LayoutDashboard, ArrowRight } from 'lucide-react';
+import { ArrowRight, Building2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export const LandingPage = () => {
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.2,
+                delayChildren: 0.3
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.8, ease: [0.25, 0.4, 0.25, 1] }
+        }
+    };
+
     return (
         <div className="relative h-screen w-full overflow-hidden font-sans bg-primary flex items-center justify-center">
             {/* Background Image with Overlay */}
@@ -10,29 +31,60 @@ export const LandingPage = () => {
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                 style={{ backgroundImage: "url('/landingpage.jpg')" }}
             />
+            
             {/* Reduced blue overlay for better visibility of the background image */}
-            <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A]/95 via-[#1E3A8A]/60 to-transparent" />
-            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A]/95 via-[#1E3A8A]/60 to-transparent z-[1]" />
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px] z-[1]" />
+            
+            {/* Animated Background Blobs */}
+            <motion.div
+                className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-700/40 rounded-full blur-[90px] z-[2]"
+                animate={{ 
+                    scale: [1, 1.2, 1], 
+                    x: [0, 50, 0], 
+                    y: [0, -40, 0]
+                }}
+                transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+            />
+            <motion.div
+                className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-700/30 rounded-full blur-[110px] z-[2]"
+                animate={{ 
+                    scale: [1, 1.3, 1], 
+                    x: [0, -50, 0], 
+                    y: [0, 50, 0]
+                }}
+                transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            />
 
             {/* Content Container */}
-            <div className="relative z-10 w-full max-w-4xl px-6 flex flex-col items-center text-center">
-
+            <motion.div 
+                className="relative z-10 w-full max-w-4xl px-6 flex flex-col items-center text-center"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {/* Logo Section */}
-                <div className="mb-10">
+                <motion.div variants={itemVariants} className="mb-10">
                     <span className="text-white text-3xl font-bold tracking-tight uppercase">Apex Campus</span>
-                </div>
+                </motion.div>
 
                 {/* Hero Section */}
-                <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6 tracking-tight">
+                <motion.h1 
+                    variants={itemVariants}
+                    className="text-4xl md:text-5xl font-bold text-white leading-tight mb-6 tracking-tight"
+                >
                     Smart Campus <span className="text-white/70 italic">Operations, Simplified</span>
-                </h1>
+                </motion.h1>
 
-                <p className="text-sm md:text-base text-white/90 font-medium leading-relaxed max-w-2xl mb-10 drop-shadow-sm">
+                <motion.p 
+                    variants={itemVariants}
+                    className="text-sm md:text-base text-white/90 font-medium leading-relaxed max-w-2xl mb-10 drop-shadow-sm"
+                >
                     Apex Campus brings together booking management, maintenance handling, and resource coordination into one intelligent platform designed to improve efficiency, reduce delays, and enhance campus service delivery.
-                </p>
+                </motion.p>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
                     <Link
                         to="/login"
                         className="group flex items-center justify-center gap-2 px-10 py-3.5 bg-white text-[#1E3A8A] rounded-xl font-bold text-base hover:bg-white/90 transition-all shadow-xl active:scale-95"
@@ -46,13 +98,16 @@ export const LandingPage = () => {
                     >
                         Get Started
                     </Link>
-                </div>
+                </motion.div>
 
                 {/* Simple Footer */}
-                <footer className="mt-16 text-white/40 text-[10px] font-medium">
+                <motion.footer 
+                    variants={itemVariants}
+                    className="mt-16 text-white/40 text-[10px] font-medium"
+                >
                     © 2026 Apex Campus. All rights reserved.
-                </footer>
-            </div>
+                </motion.footer>
+            </motion.div>
         </div>
     );
 };

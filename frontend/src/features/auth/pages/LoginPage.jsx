@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, ArrowLeft, Building2, Eye, EyeOff } from 'lucide-react';
 import { FcGoogle } from 'react-icons/fc';
+import { motion } from 'framer-motion';
 import { authService } from '../authService';
 import { useAuth } from '../AuthContext';
 import { validateLoginForm } from '../validators/authValidation';
@@ -44,6 +45,23 @@ export const LoginPage = () => {
     }, [formData]);
 
     const isFormValid = Object.keys(fieldErrors).length === 0;
+
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.15, delayChildren: 0.2 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }
+        }
+    };
 
     const handleGoogleLogin = () => {
         setIsRedirecting(true);
@@ -101,14 +119,22 @@ export const LoginPage = () => {
             {/* Left section */}
             <div className="hidden md:flex flex-col justify-between w-1/2 bg-primary text-white p-8 lg:p-12 relative overflow-hidden">
                 {/* Background effects */}
-                <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: '4s' }}></div>
-                <div className="absolute bottom-[-10%] left-[-10%] w-[60%] h-[60%] bg-indigo-500/20 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: '6s' }}></div>
+                <motion.div
+                    className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-700/60 rounded-full blur-[90px] z-0"
+                    animate={{ scale: [1, 1.2, 1], x: [0, 50, 0], y: [0, -40, 0] }}
+                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.div
+                    className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-indigo-700/50 rounded-full blur-[110px] z-0"
+                    animate={{ scale: [1, 1.3, 1], x: [0, -50, 0], y: [0, 50, 0] }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                />
                 <div
-                    className="absolute inset-0 z-0 opacity-20"
+                    className="absolute inset-0 z-[1] opacity-30 mix-blend-overlay"
                     style={{
-                        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-                        backgroundSize: '20px 20px',
-                        maskImage: 'linear-gradient(to bottom, white, transparent)'
+                        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1.5px, transparent 0)',
+                        backgroundSize: '24px 24px',
+                        maskImage: 'linear-gradient(to bottom, white 60%, transparent 100%)'
                     }}
                 ></div>
 
@@ -127,20 +153,25 @@ export const LoginPage = () => {
                         </Link>
                     </div>
 
-                    {/* Main text content */}
-                    <div className="flex-grow flex flex-col justify-center max-w-lg">
-                        <span className="py-1 px-3 rounded-full bg-blue-800/60 border border-blue-700/50 text-blue-200 text-xs font-semibold uppercase mb-4 w-max">
+                    {/* Main text content with stagger animation */}
+                    <motion.div
+                        className="flex-grow flex flex-col justify-center max-w-lg"
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                    >
+                        <motion.span variants={itemVariants} className="py-1 px-3 rounded-full bg-blue-800/60 border border-blue-700/50 text-blue-200 text-xs font-semibold uppercase mb-4 w-max">
                             Welcome Back
-                        </span>
+                        </motion.span>
 
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-6 leading-tight">
+                        <motion.h2 variants={itemVariants} className="text-3xl lg:text-4xl font-bold mb-6 leading-tight">
                             Access your smart campus dashboard.
-                        </h2>
+                        </motion.h2>
 
-                        <p className="text-blue-100/90 text-base lg:text-lg mb-8">
+                        <motion.p variants={itemVariants} className="text-blue-100/90 text-base lg:text-lg mb-8">
                             Log in to manage your facilities, view upcoming reservations, and stay connected with campus operations.
-                        </p>
-                    </div>
+                        </motion.p>
+                    </motion.div>
 
                     <div className="mt-10 text-blue-300/60 text-sm">
                         © 2026 Apex Smart Campus Operations Hub
@@ -164,7 +195,12 @@ export const LoginPage = () => {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[400px]">
+                <motion.div
+                    className="w-full max-w-[400px]"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
                     <div className="mb-8 text-center md:text-left">
                         <h1 className="text-2xl font-bold text-text-main mb-2">Log in to your account</h1>
                         <p className="text-text-muted text-md">
@@ -260,7 +296,7 @@ export const LoginPage = () => {
                             <p className="text-sm text-red-600 pt-3" role="alert">{loginError}</p>
                         )}
                     </form>
-                </div>
+                </motion.div>
             </div>
         </div>
     );

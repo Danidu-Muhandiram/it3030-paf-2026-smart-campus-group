@@ -223,7 +223,12 @@ export const RegisterPage = () => {
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[390px] my-auto">
+                <motion.div
+                    className="w-full max-w-[390px] my-auto"
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
                     <div className="mb-3 text-center md:text-left">
                         <h1 className="text-xl md:text-2xl font-bold text-text-main mb-1">Create an account</h1>
                         <p className="text-text-muted text-sm">
@@ -377,7 +382,7 @@ export const RegisterPage = () => {
                             <p className="text-xs text-red-600 pt-1.5" role="alert">{loginError}</p>
                         )}
                     </form>
-                </div>
+                </motion.div>
             </div>
         </div>
     );
