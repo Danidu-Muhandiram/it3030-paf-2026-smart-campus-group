@@ -11,15 +11,33 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
+import { getDashboardSummary } from '../../../services/dashboardService';
+
 
 export const DashboardOverview = () => {
     const { user } = useAuth();
     const displayName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'User';
     const [now, setNow] = useState(new Date());
+    const [summary, setSummary] = useState({ totalResources: 0, myBookings: 0, openTickets: 0 });
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Keep header timestamp fresh while user is on the dashboard.
+        // Keep header timestamp fresh
         const timer = setInterval(() => setNow(new Date()), 30000);
+        
+        // Fetch dashboard data
+        const fetchSummary = async () => {
+            try {
+                const data = await getDashboardSummary();
+                setSummary(data);
+            } catch (err) {
+                console.error("Failed to fetch dashboard summary:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSummary();
         return () => clearInterval(timer);
     }, []);
 
@@ -28,12 +46,13 @@ export const DashboardOverview = () => {
         timeStyle: 'short',
     });
 
-    // Mock data for the dashboard
+    // Dynamic data for the dashboard
     const stats = [
-        { title: 'Total Resources', value: '124', icon: <Building2 size={24} />, colorClass: 'bg-blue-50 text-blue-600' },
-        { title: 'My Bookings', value: '3', icon: <CalendarCheck size={24} />, colorClass: 'bg-green-50 text-green-600' },
-        { title: 'Open Tickets', value: '2', icon: <Ticket size={24} />, colorClass: 'bg-orange-50 text-orange-600' },
+        { title: 'Total Resources', value: loading ? '...' : summary.totalResources.toString(), icon: <Building2 size={24} />, colorClass: 'bg-blue-50 text-blue-600' },
+        { title: 'My Bookings', value: loading ? '...' : summary.myBookings.toString(), icon: <CalendarCheck size={24} />, colorClass: 'bg-green-50 text-green-600' },
+        { title: 'Open Tickets', value: loading ? '...' : summary.openTickets.toString(), icon: <Ticket size={24} />, colorClass: 'bg-orange-50 text-orange-600' },
     ];
+
 
     const quickActions = [
         { title: 'Book a Room', description: 'Schedule a lecture hall or meeting room.', icon: <CalendarCheck size={20} />, path: '/dashboard/bookings/new' },
