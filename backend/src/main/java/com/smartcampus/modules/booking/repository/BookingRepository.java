@@ -17,6 +17,8 @@ import java.util.Optional;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByUserOrderByCreatedAtDesc(User user);
+    long countByUser(User user);
+
 
     Optional<Booking> findByIdAndUser(Long id, User user);
 

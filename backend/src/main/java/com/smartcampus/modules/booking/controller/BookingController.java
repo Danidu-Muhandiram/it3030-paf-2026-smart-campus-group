@@ -6,6 +6,7 @@ import com.smartcampus.modules.booking.dto.BookingResponse;
 import com.smartcampus.modules.booking.dto.CancelBookingRequest;
 import com.smartcampus.modules.booking.dto.CreateBookingRequest;
 import com.smartcampus.modules.booking.dto.RejectBookingRequest;
+import com.smartcampus.modules.booking.dto.RescheduleBookingRequest;
 import com.smartcampus.modules.booking.entity.BookingStatus;
 import com.smartcampus.modules.booking.service.BookingService;
 import com.smartcampus.shared.dto.ApiResponse;
@@ -25,7 +26,6 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/bookings")
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RequiredArgsConstructor
 public class BookingController {
 
@@ -49,7 +49,7 @@ public class BookingController {
         } catch (Exception e) {
             log.error("Error creating booking", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to create booking"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -60,10 +60,12 @@ public class BookingController {
             User user = getUserFromAuthentication(authentication);
             List<BookingResponse> bookings = bookingService.getMyBookings(user.getId());
             return ResponseEntity.ok(ApiResponse.success(bookings, "Bookings retrieved successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Error fetching user bookings", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch bookings"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -81,7 +83,7 @@ public class BookingController {
         } catch (Exception e) {
             log.error("Error fetching booking by id", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch booking"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -102,7 +104,28 @@ public class BookingController {
         } catch (Exception e) {
             log.error("Error cancelling booking", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to cancel booking"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
+        }
+    }
+
+    @PutMapping("/{id}/reschedule")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ApiResponse<BookingResponse>> rescheduleBooking(
+            @PathVariable Long id,
+            @Valid @RequestBody RescheduleBookingRequest request,
+            Authentication authentication) {
+        try {
+            User user = getUserFromAuthentication(authentication);
+            BookingResponse booking = bookingService.rescheduleBooking(id, request, user.getId());
+            return ResponseEntity.ok(ApiResponse.success(booking, "Booking rescheduled successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error rescheduling booking", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -115,10 +138,12 @@ public class BookingController {
                     ? bookingService.getAllBookings()
                     : bookingService.getBookingsByStatus(status);
             return ResponseEntity.ok(ApiResponse.success(bookings, "Bookings retrieved successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Error fetching admin bookings", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch bookings"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -138,7 +163,7 @@ public class BookingController {
         } catch (Exception e) {
             log.error("Error approving booking", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to approve booking"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -159,7 +184,27 @@ public class BookingController {
         } catch (Exception e) {
             log.error("Error rejecting booking", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to reject booking"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
+        }
+    }
+
+    @PostMapping("/admin/{id}/resend-email")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> resendBookingEmail(
+            @PathVariable Long id,
+            Authentication authentication) {
+        try {
+            User admin = getUserFromAuthentication(authentication);
+            bookingService.resendBookingStatusEmail(id, admin.getId());
+            return ResponseEntity.ok(ApiResponse.success(null, "Booking email resent successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error resending booking email", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -171,10 +216,12 @@ public class BookingController {
         try {
             List<BookingResponse> bookings = bookingService.getBookingsByResourceAndDate(resourceName, date);
             return ResponseEntity.ok(ApiResponse.success(bookings, "Resource bookings retrieved successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Error fetching resource/date bookings", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Failed to fetch resource bookings"));
+                    .body(ApiResponse.error(resolveErrorMessage(e)));
         }
     }
 
@@ -182,5 +229,19 @@ public class BookingController {
         String email = authentication.getName();
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
+    private String resolveErrorMessage(Exception exception) {
+        Throwable current = exception;
+        String message = null;
+
+        while (current != null) {
+            if (current.getMessage() != null && !current.getMessage().isBlank()) {
+                message = current.getMessage();
+            }
+            current = current.getCause();
+        }
+
+        return message != null ? message : "Unexpected server error";
     }
 }
