@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "assets")
@@ -36,6 +37,12 @@ public class Asset {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "availability_start")
+    private LocalTime availabilityStart;
+
+    @Column(name = "availability_end")
+    private LocalTime availabilityEnd;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")

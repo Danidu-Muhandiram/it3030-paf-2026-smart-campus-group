@@ -13,15 +13,16 @@ export function BookingCard({
   onCancel,
   onApprove,
   onReject,
+  onReschedule,
   showAdminActions = false
 }) {
   const navigate = useNavigate();
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       weekday: 'short',
-      month: 'short', 
+      month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
@@ -67,7 +68,7 @@ export function BookingCard({
   };
 
   return (
-    <div 
+    <div
       className={`border rounded-lg shadow-sm hover:shadow-md transition-shadow ${showAdminActions && status === 'PENDING' ? 'cursor-pointer' : ''}`}
       onClick={handleCardClick}
     >
@@ -87,14 +88,14 @@ export function BookingCard({
           <p className="text-sm font-medium text-gray-600">Purpose</p>
           <p className="text-sm text-foreground">{purpose}</p>
         </div>
-        
+
         {requesterName && (
           <div>
             <p className="text-sm font-medium text-gray-600">Requester</p>
             <p className="text-sm text-foreground">{requesterName}</p>
           </div>
         )}
-        
+
         {attendees !== undefined && (
           <div>
             <p className="text-sm font-medium text-gray-600">Expected Attendees</p>
@@ -103,17 +104,30 @@ export function BookingCard({
         )}
 
         {/* User Actions */}
-        {!showAdminActions && status === 'APPROVED' && onCancel && (
-          <div className="pt-2 border-t">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onCancel();
-              }}
-              className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
-            >
-              Cancel
-            </button>
+        {!showAdminActions && status === 'APPROVED' && (
+          <div className="pt-2 border-t flex gap-2">
+            {onReschedule && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReschedule();
+                }}
+                className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded"
+              >
+                Reschedule
+              </button>
+            )}
+            {onCancel && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancel();
+                }}
+                className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded"
+              >
+                Cancel
+              </button>
+            )}
           </div>
         )}
 

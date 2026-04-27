@@ -4,6 +4,7 @@ import com.smartcampus.modules.booking.dto.BookingResponse;
 import com.smartcampus.modules.booking.dto.CancelBookingRequest;
 import com.smartcampus.modules.booking.dto.CreateBookingRequest;
 import com.smartcampus.modules.booking.dto.RejectBookingRequest;
+import com.smartcampus.modules.booking.dto.RescheduleBookingRequest;
 import com.smartcampus.modules.booking.entity.BookingStatus;
 
 import java.time.LocalDate;
@@ -27,4 +28,8 @@ public interface BookingService {
     BookingResponse rejectBooking(Long bookingId, RejectBookingRequest request, Long adminUserId);
 
     BookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId);
+
+    BookingResponse rescheduleBooking(Long bookingId, RescheduleBookingRequest request, Long userId);
+
+    void resendBookingStatusEmail(Long bookingId, Long adminUserId);
 }

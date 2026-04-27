@@ -29,6 +29,18 @@ spring:
               - email
               - profile
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 server:
   port: 8085
   servlet:
@@ -49,3 +61,7 @@ app:
       max-age-seconds: ${app.auth.session.max-age-seconds}
   jwt:
     secret: ${JWT_SECRET}
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_FROM:noreply@smartcampus.com}
+    fromName: ${MAIL_FROM_NAME:Smart Campus}
