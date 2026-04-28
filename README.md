@@ -210,9 +210,9 @@ graph TB
 
 ## 👥 Contributors
 
-- [Danidu Muhandiram](https://github.com/your-username)
-- [Achini Anuththara]([https://github.com/teammate-username](https://github.com/achiniAnuththara)
-- [Vinuji Wathmavi]([https://github.com/teammate-username](https://github.com/VinujiWathmavi)
+- [Danidu Muhandiram](https://github.com/Danidu-Muhandiram)
+- [Achini Anuththara](https://github.com/achiniAnuththara)
+- [Vinuji Wathmavi](https://github.com/VinujiWathmavi)
 
 ## 📄 License
 This project is part of the **IT3030 - PAF 2026** coursework. All rights reserved.
