@@ -1,35 +1,45 @@
 # Apex Campus: Smart Campus Operations Hub
 
 ![CI](https://github.com/Danidu-Muhandiram/it3030-paf-2026-smart-campus-group/actions/workflows/main.yml/badge.svg)
+![Java](https://img.shields.io/badge/Java-21-orange?logo=java&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.x-brightgreen)
 ![React](https://img.shields.io/badge/React-18.x-blue)
 ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
+![MySQL](https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-CC0200?logo=flyway&logoColor=white)
 
-A comprehensive, role-based management platform designed to streamline campus operations, facility maintenance, and resource bookings for modern educational institutions.
+A role-based campus management platform designed to simplify and centralize institutional operations. The system enables efficient handling of facility maintenance, resource booking, and asset management through a structured and user-friendly interface. With secure access control for different user roles, it ensures smooth coordination between users, staff, and administrators. Features like real-time ticket management, organized communication, and reliable data handling help reduce manual effort and improve overall operational efficiency. Built with a modern, scalable architecture, the platform delivers a responsive experience and supports future enhancements.
 
----
+## 📸 User Interface
+
+### Dashboard Preview
 
 ## 🚀 Core Modules
 
 ### 🔐 Authentication & Identity
-- **Dual Login System**: Support for both local credentials and **Google OAuth2** integration.
-- **JWT Security**: State-of-the-art authentication using `HttpOnly` and `SameSite=Lax` cookies to prevent XSS and CSRF.
-- **Role-Based Access Control (RBAC)**: Fine-grained permissions for `ADMIN`, `TECHNICIAN`, and `USER` roles.
+- **Dual Authentication**: Supports both secure local login and **Google OAuth2** integration.
+- **JWT-Based Security**: Authentication handled via `HttpOnly` and `SameSite=Lax` cookies to protect against XSS and CSRF attacks.
+- **Role-Based Access Control (RBAC)**: Fine-grained authorization for `ADMIN`, `TECHNICIAN`, and `USER` roles.
 
-### 🛠️ Maintenance Tickets
-- **Full Lifecycle**: Tickets transition through `OPEN`, `IN_PROGRESS`, `RESOLVED`, and `CLOSED/REJECTED` states.
-- **Rich Interaction**: Users and technicians can exchange comments and upload up to 3 high-quality images per ticket.
-- **Smart Assignment**: Admins can assign tickets to technician pools, with technicians able to claim and resolve tasks.
+### 🛠️ Maintenance Ticketing System
+- **Complete Lifecycle Management**: Tickets progress through `OPEN`, `IN_PROGRESS`, `RESOLVED`, and `CLOSED/REJECTED` states.
+- **Interactive Communication**: Users and technicians can collaborate via comments and attach up to 3 images per ticket.
+- **Smart Assignment Workflow**: Admins assign tickets to technician groups, while technicians can claim, manage, and resolve tasks efficiently.
+
+### 📅 Resource Booking Management
+- **Centralized Booking System**: Reserve campus resources such as rooms, labs, and equipment.
+- **Conflict Prevention**: Prevents double-booking with time-slot validation and availability checks.
+- **Approval Workflow**: Booking requests can be approved or rejected by authorized roles.
+- **Usage Visibility**: Clear view of current and upcoming reservations.
 
 ### 📦 Facility & Asset Management
-- **Hierarchical Tracking**: Manage university locations (Buildings/Floors) and the specific assets (Projectors, ACs, Labs) within them.
-- **Availability Tracking**: Real-time status visibility for all campus resources.
+- **Hierarchical Organization**: Manage buildings, floors, and assets (e.g., projectors, AC units, labs).
+- **Real-Time Availability**: Track the status and usability of resources across the campus.
 
 ### 🔔 Notification System
-- **Contextual Alerts**: Automatic notifications for ticket status changes, new comments, and administrative assignments.
-- **Unread Tracking**: Persistent unread counts and historical logs for each user.
+- **Event-Driven Alerts**: Notifications for ticket updates, comments, booking actions, and assignments.
+- **Unread Tracking**: Persistent notification logs with unread indicators.
 
----
 
 ## 🛠️ Technology Stack
 
@@ -95,9 +105,7 @@ graph TD
 
 ---
 
-## 📸 User Interface
 
-### Dashboard Preview
 
 
 ### Maintenance Workflow
