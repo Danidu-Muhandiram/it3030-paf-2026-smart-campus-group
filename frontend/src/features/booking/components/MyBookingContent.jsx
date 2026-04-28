@@ -108,7 +108,7 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
             <p className="text-sm text-text-muted mt-1 max-w-xs mx-auto">
               {filter === 'ALL'
                 ? "You haven't made any bookings yet. Start exploring the catalogue to book a resource!"
-                : `You don't have any ${status.label.toLowerCase()} bookings at the moment.`}
+                : `You don't have any ${statuses.find(s => s.value === filter)?.label.toLowerCase() || ''} bookings at the moment.`}
             </p>
           </div>
           {filter !== 'ALL' && (
