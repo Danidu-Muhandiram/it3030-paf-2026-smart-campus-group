@@ -1,24 +1,22 @@
-import { useState } from 'react';
-
-// Mock data - replace with API call
-const RESOURCES = [
-  { id: '1', name: 'Conference Room A', capacity: 20 },
-  { id: '2', name: 'Meeting Room B', capacity: 10 },
-  { id: '3', name: 'Auditorium', capacity: 100 },
-  { id: '4', name: 'Board Room', capacity: 15 }
-];
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useResources } from '../../facilities/hooks/useResources';
 
 export function BookingRequestForm({ onSubmit }) {
+  const [searchParams] = useSearchParams();
+  const { resources, loading: resourcesLoading } = useResources();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
-    resourceId: '',
+    resourceId: searchParams.get('resourceId') || '',
     date: '',
     startTime: '',
     endTime: '',
     purpose: '',
     expectedAttendees: ''
   });
+
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -70,8 +68,8 @@ export function BookingRequestForm({ onSubmit }) {
         newErrors.expectedAttendees = 'At least 1 attendee is required';
       }
       
-      const selectedResource = RESOURCES.find(r => r.id === formData.resourceId);
-      if (selectedResource && attendees > selectedResource.capacity) {
+      const selectedResource = resources.find(r => r.id.toString() === formData.resourceId.toString());
+      if (selectedResource && selectedResource.capacity && attendees > selectedResource.capacity) {
         newErrors.expectedAttendees = `Exceeds room capacity of ${selectedResource.capacity}`;
       }
     }
@@ -91,8 +89,8 @@ export function BookingRequestForm({ onSubmit }) {
     setIsLoading(true);
 
     try {
-      const selectedResource = RESOURCES.find(
-        (r) => r.id === formData.resourceId
+      const selectedResource = resources.find(
+        (r) => r.id.toString() === formData.resourceId.toString()
       );
 
       const formatDate = (date) => {
@@ -154,16 +152,19 @@ export function BookingRequestForm({ onSubmit }) {
           <select
             id="resource"
             value={formData.resourceId}
+            disabled={resourcesLoading}
             onChange={(e) => {
               setFormData({ ...formData, resourceId: e.target.value });
               setErrors({ ...errors, resourceId: '' });
             }}
             className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors ${errors.resourceId ? 'border-red-500' : 'border-gray-200'}`}
           >
-            <option value="">Choose a resource...</option>
-            {RESOURCES.map((resource) => (
+            <option value="">
+              {resourcesLoading ? 'Loading resources...' : 'Choose a resource...'}
+            </option>
+            {resources.map((resource) => (
               <option key={resource.id} value={resource.id}>
-                {resource.name} (Capacity: {resource.capacity})
+                {resource.name} {resource.capacity ? `(Capacity: ${resource.capacity})` : ''}
               </option>
             ))}
           </select>
