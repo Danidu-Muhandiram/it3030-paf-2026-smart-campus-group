@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { MyBookingsPage as MyBookingContent } from '../components/MyBookingContent';
-import { Calendar } from 'lucide-react';
 
 const MOCK_BOOKINGS = [
   {
@@ -34,37 +34,24 @@ const MOCK_BOOKINGS = [
 
 export function MyBookingPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="flex items-start justify-between gap-6">
-          <div>
-            <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-              <Link to="/dashboard" className="hover:text-blue-600 transition-colors font-medium">Dashboard</Link>
-              <span>/</span>
-              <span className="text-blue-600 font-medium">My Bookings</span>
-            </nav>
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-600 p-3 rounded-lg">
-                <Calendar className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
-                <p className="text-gray-600">Manage and track your resource reservations</p>
-              </div>
-            </div>
-          </div>
-          <Link
-            to="/dashboard/bookings/new"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md h-auto inline-flex items-center"
-          >
-              + New Booking
-          </Link>
+    <div className="space-y-6 pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-text-main leading-tight">My Bookings</h1>
+          <p className="text-text-muted mt-1">Manage and track your resource reservations in real-time.</p>
         </div>
-
-        {/* Page Content */}
-        <MyBookingContent initialBookings={MOCK_BOOKINGS} />
+        <Link
+          to="/dashboard/bookings/new"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-all shadow-sm"
+        >
+          <Plus size={18} />
+          New Booking
+        </Link>
       </div>
-    </main>
+
+      {/* Page Content */}
+      <MyBookingContent initialBookings={MOCK_BOOKINGS} />
+    </div>
   );
 }

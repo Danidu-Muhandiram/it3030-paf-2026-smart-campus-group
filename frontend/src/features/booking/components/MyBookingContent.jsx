@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BookingCard } from './BookingCard';
 import axiosInstance from '../../../services/axios';
+import { Calendar, SearchX, Loader2 } from 'lucide-react';
 
 export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
   const [bookings, setBookings] = useState(initialBookings);
@@ -66,8 +67,9 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
 
   if (isFetching) {
     return (
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">Loading your bookings...</p>
+      <div className="flex flex-col items-center justify-center py-24 gap-3 text-text-muted">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-sm font-medium">Loading your bookings...</span>
       </div>
     );
   }
@@ -75,15 +77,15 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
   return (
     <div className="space-y-6">
       {/* Filter Tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex items-center gap-1 border-b border-gray-200 -mx-1 px-1 overflow-x-auto scrollbar-none">
         {statuses.map((status) => (
           <button
             key={status.value}
             onClick={() => setFilter(status.value)}
-            className={`px-4 py-2 rounded border ${
-              filter === status.value 
-                ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                : 'bg-white border-gray-300 hover:bg-gray-50'
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap ${
+              filter === status.value
+                ? 'border-primary text-primary'
+                : 'border-transparent text-text-muted hover:text-text-main'
             }`}
           >
             {status.label}
@@ -93,13 +95,30 @@ export function MyBookingsPage({ initialBookings = [], onCancelBooking }) {
 
       {/* Bookings List */}
       {filteredBookings.length === 0 ? (
-        <div className="text-center py-12 border rounded-lg">
-          <h3 className="text-lg font-semibold mb-2">No Bookings Found</h3>
-          <p className="text-muted-foreground">
-            {filter === 'ALL'
-              ? "You haven't made any bookings yet. Create one to get started!"
-              : `You don't have any ${filter.toLowerCase()} bookings.`}
-          </p>
+        <div className="flex flex-col items-center justify-center py-20 text-text-muted gap-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center">
+            {filter === 'ALL' ? (
+                <Calendar className="w-8 h-8 text-gray-300" />
+            ) : (
+                <SearchX className="w-8 h-8 text-gray-300" />
+            )}
+          </div>
+          <div className="text-center">
+            <h3 className="text-base font-bold text-text-main">No Bookings Found</h3>
+            <p className="text-sm text-text-muted mt-1 max-w-xs mx-auto">
+              {filter === 'ALL'
+                ? "You haven't made any bookings yet. Start exploring the catalogue to book a resource!"
+                : `You don't have any ${status.label.toLowerCase()} bookings at the moment.`}
+            </p>
+          </div>
+          {filter !== 'ALL' && (
+            <button
+                onClick={() => setFilter('ALL')}
+                className="text-sm font-semibold text-primary hover:underline"
+            >
+                View all bookings
+            </button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
