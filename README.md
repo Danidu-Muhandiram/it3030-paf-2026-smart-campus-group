@@ -12,7 +12,14 @@ A role-based campus management platform designed to simplify and centralize inst
 
 ## 📸 User Interface
 
-### Dashboard Preview
+### Landing Page
+![Landing Page](images/landingpage.jpg)
+
+### Authentication Flow
+<p align="center">
+  <img src="images/loginpage.jpg" width="49%" alt="Login Page" />
+  <img src="images/registerpage.jpg" width="49%" alt="Register Page" />
+</p>
 
 ## 🚀 Core Modules
 
