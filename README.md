@@ -9,6 +9,7 @@
 ![Flyway](https://img.shields.io/badge/Flyway-CC0200?logo=flyway&logoColor=white)
 
 A role-based campus management platform designed to simplify and centralize institutional operations. The system enables efficient handling of facility maintenance, resource booking, and asset management through a structured and user-friendly interface. With secure access control for different user roles, it ensures smooth coordination between users, staff, and administrators. Features like real-time ticket management, organized communication, and reliable data handling help reduce manual effort and improve overall operational efficiency. Built with a modern, scalable architecture, the platform delivers a responsive experience and supports future enhancements.
+  <br/>
 
 ## 📸 User Interface
 
@@ -21,52 +22,64 @@ A role-based campus management platform designed to simplify and centralize inst
   <summary>Click here: 🔐 Login & Register Screens</summary>
   <br/>
   <p align="center">
-    <img src="images/loginpage.jpg" width="45%" />
-    <img src="images/registerpage.jpg" width="45%" />
+    <img src="images/loginpage.jpg" width="80%" />
+    <img src="images/registerpage.jpg" width="80%" />
   </p>
 </details>
 
 <details>
-  <summary>📊 User Dashboard</summary>
+  <summary>Click here: 📊 User and Admin Dashboards</summary>
   <br/>
   <p align="center">
     <img src="images/userdashboard.jpg" width="80%" />
+    <img src="images/admindashbaord.jpg" width="80%" />
   </p>
 </details>
 
 <details>
-  <summary>📅 Booking Management</summary>
+  <summary>Click here: 📅 Booking Management</summary>
   <br/>
   <p align="center">
     <img src="images/booking.jpg" width="80%" />
+    <img src="images/adminbooking.jpg" width="80%" />
   </p>
 </details>
 
 <details>
-  <summary>🏢 Facilities & Assets</summary>
+  <summary>Click here: 🏢 Facilities & Assets</summary>
   <br/>
   <p align="center">
     <img src="images/facilities.jpg" width="80%" />
+    <img src="images/adminresource.jpg" width="80%" />
   </p>
 </details>
 
 <details>
-  <summary>🛠️ Maintenance Tickets</summary>
+  <summary>Click here: 🛠️ Maintenance Tickets</summary>
   <br/>
   <p align="center">
     <img src="images/tickets.jpg" width="80%" />
+    <img src="images/adminticket.jpg" width="80%" />
   </p>
 </details>
 
 <details>
-  <summary>👤 User Profile</summary>
+  <summary>Click here: 👤 User Profile</summary>
   <br/>
   <p align="center">
     <img src="images/profile.jpg" width="80%" />
   </p>
 </details>
 
-## 🚀 Core Modules
+<details>
+  <summary>Click here: 👷‍♂️ Technician Dashboard</summary>
+  <br/>
+  <p align="center">
+    <img src="images/technician.jpg" width="80%" />
+  </p>
+</details>
+
+ ## 🚀 Core Modules
 
 ### 🔐 Authentication & Identity
 - **Dual Authentication**: Supports both secure local login and **Google OAuth2** integration.
