@@ -1,24 +1,22 @@
-import { useState } from 'react';
-
-// Mock data - replace with API call
-const RESOURCES = [
-  { id: '1', name: 'Conference Room A', capacity: 20 },
-  { id: '2', name: 'Meeting Room B', capacity: 10 },
-  { id: '3', name: 'Auditorium', capacity: 100 },
-  { id: '4', name: 'Board Room', capacity: 15 }
-];
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useResources } from '../../facilities/hooks/useResources';
 
 export function BookingRequestForm({ onSubmit }) {
+  const [searchParams] = useSearchParams();
+  const { resources, loading: resourcesLoading } = useResources();
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState({
-    resourceId: '',
+    resourceId: searchParams.get('resourceId') || '',
     date: '',
     startTime: '',
     endTime: '',
     purpose: '',
     expectedAttendees: ''
   });
+
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -70,8 +68,8 @@ export function BookingRequestForm({ onSubmit }) {
         newErrors.expectedAttendees = 'At least 1 attendee is required';
       }
       
-      const selectedResource = RESOURCES.find(r => r.id === formData.resourceId);
-      if (selectedResource && attendees > selectedResource.capacity) {
+      const selectedResource = resources.find(r => r.id.toString() === formData.resourceId.toString());
+      if (selectedResource && selectedResource.capacity && attendees > selectedResource.capacity) {
         newErrors.expectedAttendees = `Exceeds room capacity of ${selectedResource.capacity}`;
       }
     }
@@ -91,8 +89,8 @@ export function BookingRequestForm({ onSubmit }) {
     setIsLoading(true);
 
     try {
-      const selectedResource = RESOURCES.find(
-        (r) => r.id === formData.resourceId
+      const selectedResource = resources.find(
+        (r) => r.id.toString() === formData.resourceId.toString()
       );
 
       const formatDate = (date) => {
@@ -144,155 +142,152 @@ export function BookingRequestForm({ onSubmit }) {
   };
 
   return (
-    <div className="max-w-2xl border rounded-lg shadow-sm">
-      <div className="p-6 border-b">
-        <h2 className="text-2xl font-bold">Create Booking Request</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          Fill in the details below to request a resource booking
-        </p>
-      </div>
-      <div className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Resource Selection */}
+    <div className="p-6 sm:p-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Resource Selection */}
+        <div className="space-y-2">
+          <label htmlFor="resource" className="text-sm font-semibold text-text-main">
+            Select Resource <span className="text-red-500">*</span>
+          </label>
+          <select
+            id="resource"
+            value={formData.resourceId}
+            disabled={resourcesLoading}
+            onChange={(e) => {
+              setFormData({ ...formData, resourceId: e.target.value });
+              setErrors({ ...errors, resourceId: '' });
+            }}
+            className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors ${errors.resourceId ? 'border-red-500' : 'border-gray-200'}`}
+          >
+            <option value="">
+              {resourcesLoading ? 'Loading resources...' : 'Choose a resource...'}
+            </option>
+            {resources.map((resource) => (
+              <option key={resource.id} value={resource.id}>
+                {resource.name} {resource.capacity ? `(Capacity: ${resource.capacity})` : ''}
+              </option>
+            ))}
+          </select>
+          {errors.resourceId && (
+            <p className="text-xs text-red-600 font-medium">{errors.resourceId}</p>
+          )}
+        </div>
+
+        {/* Date Selection */}
+        <div className="space-y-2">
+          <label htmlFor="date" className="text-sm font-semibold text-text-main">
+            Date <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="date"
+            type="date"
+            value={formData.date}
+            onChange={(e) => {
+              setFormData({ ...formData, date: e.target.value });
+              setErrors({ ...errors, date: '' });
+            }}
+            className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors ${errors.date ? 'border-red-500' : 'border-gray-200'}`}
+          />
+          {errors.date && (
+            <p className="text-xs text-red-600 font-medium">{errors.date}</p>
+          )}
+        </div>
+
+        {/* Time Selection */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label htmlFor="resource" className="text-sm font-medium text-foreground">
-              Select Resource *
-            </label>
-            <select
-              id="resource"
-              value={formData.resourceId}
-              onChange={(e) => {
-                setFormData({ ...formData, resourceId: e.target.value });
-                setErrors({ ...errors, resourceId: '' });
-              }}
-              className={`w-full px-3 py-2 border rounded-md ${errors.resourceId ? 'border-red-500' : ''}`}
-            >
-              <option value="">Choose a resource...</option>
-              {RESOURCES.map((resource) => (
-                <option key={resource.id} value={resource.id}>
-                  {resource.name} (Capacity: {resource.capacity})
-                </option>
-              ))}
-            </select>
-            {errors.resourceId && (
-              <p className="text-xs text-red-600">{errors.resourceId}</p>
-            )}
-          </div>
-
-          {/* Date Selection */}
-          <div className="space-y-2">
-            <label htmlFor="date" className="text-sm font-medium text-foreground">
-              Date *
-            </label>
-            <input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => {
-                setFormData({ ...formData, date: e.target.value });
-                setErrors({ ...errors, date: '' });
-              }}
-              className={`w-full px-3 py-2 border rounded-md ${errors.date ? 'border-red-500' : ''}`}
-            />
-            {errors.date && (
-              <p className="text-xs text-red-600">{errors.date}</p>
-            )}
-          </div>
-
-          {/* Time Selection */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label htmlFor="startTime" className="text-sm font-medium text-foreground">
-                Start Time *
-              </label>
-              <input
-                id="startTime"
-                type="time"
-                value={formData.startTime}
-                onChange={(e) => {
-                  setFormData({ ...formData, startTime: e.target.value });
-                  setErrors({ ...errors, startTime: '' });
-                }}
-                className={`w-full px-3 py-2 border rounded-md ${errors.startTime ? 'border-red-500' : ''}`}
-              />
-              {errors.startTime && (
-                <p className="text-xs text-red-600">{errors.startTime}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="endTime" className="text-sm font-medium text-foreground">
-                End Time *
-              </label>
-              <input
-                id="endTime"
-                type="time"
-                value={formData.endTime}
-                onChange={(e) => {
-                  setFormData({ ...formData, endTime: e.target.value });
-                  setErrors({ ...errors, endTime: '' });
-                }}
-                className={`w-full px-3 py-2 border rounded-md ${errors.endTime ? 'border-red-500' : ''}`}
-              />
-              {errors.endTime && (
-                <p className="text-xs text-red-600">{errors.endTime}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Purpose */}
-          <div className="space-y-2">
-            <label htmlFor="purpose" className="text-sm font-medium text-foreground">
-              Purpose *
-            </label>
-            <textarea
-              id="purpose"
-              placeholder="Describe the purpose of this booking..."
-              value={formData.purpose}
-              onChange={(e) => {
-                setFormData({ ...formData, purpose: e.target.value });
-                setErrors({ ...errors, purpose: '' });
-              }}
-              rows={4}
-              className={`w-full px-3 py-2 border rounded-md resize-none ${errors.purpose ? 'border-red-500' : ''}`}
-            />
-            {errors.purpose && (
-              <p className="text-xs text-red-600">{errors.purpose}</p>
-            )}
-          </div>
-
-          {/* Expected Attendees */}
-          <div className="space-y-2">
-            <label htmlFor="attendees" className="text-sm font-medium text-foreground">
-              Expected Attendees *
+            <label htmlFor="startTime" className="text-sm font-semibold text-text-main">
+              Start Time <span className="text-red-500">*</span>
             </label>
             <input
-              id="attendees"
-              type="number"
-              min="1"
-              placeholder="Enter number of expected attendees"
-              value={formData.expectedAttendees}
+              id="startTime"
+              type="time"
+              value={formData.startTime}
               onChange={(e) => {
-                setFormData({ ...formData, expectedAttendees: e.target.value });
-                setErrors({ ...errors, expectedAttendees: '' });
+                setFormData({ ...formData, startTime: e.target.value });
+                setErrors({ ...errors, startTime: '' });
               }}
-              className={`w-full px-3 py-2 border rounded-md ${errors.expectedAttendees ? 'border-red-500' : ''}`}
+              className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors ${errors.startTime ? 'border-red-500' : 'border-gray-200'}`}
             />
-            {errors.expectedAttendees && (
-              <p className="text-xs text-red-600">{errors.expectedAttendees}</p>
+            {errors.startTime && (
+              <p className="text-xs text-red-600 font-medium">{errors.startTime}</p>
             )}
           </div>
 
-          {/* Submit Button */}
+          <div className="space-y-2">
+            <label htmlFor="endTime" className="text-sm font-semibold text-text-main">
+              End Time <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="endTime"
+              type="time"
+              value={formData.endTime}
+              onChange={(e) => {
+                setFormData({ ...formData, endTime: e.target.value });
+                setErrors({ ...errors, endTime: '' });
+              }}
+              className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors ${errors.endTime ? 'border-red-500' : 'border-gray-200'}`}
+            />
+            {errors.endTime && (
+              <p className="text-xs text-red-600 font-medium">{errors.endTime}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Purpose */}
+        <div className="space-y-2">
+          <label htmlFor="purpose" className="text-sm font-semibold text-text-main">
+            Purpose <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            id="purpose"
+            placeholder="Describe the purpose of this booking..."
+            value={formData.purpose}
+            onChange={(e) => {
+              setFormData({ ...formData, purpose: e.target.value });
+              setErrors({ ...errors, purpose: '' });
+            }}
+            rows={4}
+            className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors resize-none ${errors.purpose ? 'border-red-500' : 'border-gray-200'}`}
+          />
+          {errors.purpose && (
+            <p className="text-xs text-red-600 font-medium">{errors.purpose}</p>
+          )}
+        </div>
+
+        {/* Expected Attendees */}
+        <div className="space-y-2">
+          <label htmlFor="attendees" className="text-sm font-semibold text-text-main">
+            Expected Attendees <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="attendees"
+            type="number"
+            min="1"
+            placeholder="Enter number of expected attendees"
+            value={formData.expectedAttendees}
+            onChange={(e) => {
+              setFormData({ ...formData, expectedAttendees: e.target.value });
+              setErrors({ ...errors, expectedAttendees: '' });
+            }}
+            className={`w-full px-4 py-2.5 bg-gray-50 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white transition-colors ${errors.expectedAttendees ? 'border-red-500' : 'border-gray-200'}`}
+          />
+          {errors.expectedAttendees && (
+            <p className="text-xs text-red-600 font-medium">{errors.expectedAttendees}</p>
+          )}
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-4">
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md disabled:opacity-50"
+            className="w-full sm:w-auto px-8 py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg disabled:opacity-50 transition-colors shadow-sm"
           >
-            {isLoading ? 'Submitting...' : 'Submit Booking Request'}
+            {isLoading ? 'Submitting Request...' : 'Submit Booking Request'}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }
