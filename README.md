@@ -12,14 +12,59 @@ A role-based campus management platform designed to simplify and centralize inst
 
 ## 📸 User Interface
 
-### Landing Page
-![Landing Page](images/landingpage.jpg)
-
-### Authentication Flow
+### 🏠 Landing Page
 <p align="center">
-  <img src="images/loginpage.jpg" width="49%" alt="Login Page" />
-  <img src="images/registerpage.jpg" width="49%" alt="Register Page" />
+  <img src="images/landingpage.jpg" width="80%" />
 </p>
+
+<details>
+  <summary>Click here: 🔐 Login & Register Screens</summary>
+  <br/>
+  <p align="center">
+    <img src="images/loginpage.jpg" width="45%" />
+    <img src="images/registerpage.jpg" width="45%" />
+  </p>
+</details>
+
+<details>
+  <summary>📊 User Dashboard</summary>
+  <br/>
+  <p align="center">
+    <img src="images/userdashboard.jpg" width="80%" />
+  </p>
+</details>
+
+<details>
+  <summary>📅 Booking Management</summary>
+  <br/>
+  <p align="center">
+    <img src="images/booking.jpg" width="80%" />
+  </p>
+</details>
+
+<details>
+  <summary>🏢 Facilities & Assets</summary>
+  <br/>
+  <p align="center">
+    <img src="images/facilities.jpg" width="80%" />
+  </p>
+</details>
+
+<details>
+  <summary>🛠️ Maintenance Tickets</summary>
+  <br/>
+  <p align="center">
+    <img src="images/tickets.jpg" width="80%" />
+  </p>
+</details>
+
+<details>
+  <summary>👤 User Profile</summary>
+  <br/>
+  <p align="center">
+    <img src="images/profile.jpg" width="80%" />
+  </p>
+</details>
 
 ## 🚀 Core Modules
 
