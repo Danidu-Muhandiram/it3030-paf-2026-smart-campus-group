@@ -115,20 +115,59 @@ A role-based campus management platform designed to simplify and centralize inst
 | **Frontend** | React 18, Vite, Tailwind CSS, Framer Motion (Animations), Lucide Icons |
 | **DevOps** | GitHub Actions (CI), Maven, npm |
 
----
 
 ## 📐 System Architecture
 
 ```mermaid
-graph TD
-    User((User/Admin)) -->|Vite/React| Frontend[Frontend App]
-    Frontend -->|REST API + JWT Cookie| Backend[Spring Boot Service]
-    Backend -->|Spring Data JPA| DB[(MySQL Database)]
-    Backend -->|OAuth2| Google[Google Identity]
-    Backend -->|File System| Storage[Image Uploads]
+%%{init: {'themeVariables': { 'fontSize': '18px' }}}%%
+graph TB
+    %% Actors & Roles
+    subgraph Roles [Campus Roles]
+        User["🎓 Student / Staff"]
+        Admin["🔑 Administrator"]
+        Tech["🔧 Technician"]
+    end
+
+    %% Frontend Layer
+    subgraph Frontend ["Frontend Layer (Vite + React)"]
+        direction TB
+        UI_Common["Common UI (Landing, Login, Register, Profile)"]
+        UI_User["User Workspace (Bookings, Tickets, Available Resources)"]
+        UI_Admin["Admin Control Panel (Management Preview, Reports)"]
+        UI_Tech["Technician Workbench (Assigned Tasks)"]
+    end
+
+    %% Backend Layer
+    subgraph Backend ["Backend Core (Spring Boot)"]
+        direction TB
+        subgraph Services [Business Logic]
+            M_Auth["🔐 Auth Service (JWT + RBAC)"]
+            M_Ticket["🛠️ Ticket Module"]
+            M_Booking["📅 Booking Module"]
+            M_Facility["📦 Facility Module"]
+            M_Notif["🔔 Notification Module"]
+        end
+    end
+
+    %% Infrastructure
+    subgraph Infrastructure [Data & External]
+        DB[("🗄️ MySQL Database")]
+        Storage[("📁 File Storage (Uploads)")]
+        Google[("🌐 Google Identity")]
+    end
+
+    %% Relations
+    User -->|Requests Bookings/Tickets| UI_User
+    Admin -->|Manages Resources/Approvals| UI_Admin
+    Tech -->|Updates Maintenance Tasks| UI_Tech
+
+    Frontend -->|HTTP REST APIs + HttpOnly JWT| Backend
+
+    M_Auth -->|OAuth2 Protocol| Google
+    M_Ticket -->|Saves Attachments| Storage
+    Services -->|Persistent State| DB
 ```
 
----
 
 ## ⚙️ Getting Started
 
@@ -168,17 +207,7 @@ graph TD
    ```
    *The UI will be available at `http://localhost:5173`.*
 
----
 
-
-
-
-### Maintenance Workflow
-- **Submit**: Describe the issue, pick a resource, and upload photos.
-- **Track**: Real-time status updates via the sidebar.
-- **Collaborate**: Comment directly with the assigned technician.
-
----
 
 ## 📄 License
 This project is part of the **IT3030 - PAF 2026** coursework. All rights reserved.
