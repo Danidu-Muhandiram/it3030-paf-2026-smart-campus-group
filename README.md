@@ -208,6 +208,11 @@ graph TB
    *The UI will be available at `http://localhost:5173`.*
 
 
+## 👥 Contributors
+
+- [Danidu Muhandiram](https://github.com/your-username)
+- [Achini Anuththara]([https://github.com/teammate-username](https://github.com/achiniAnuththara)
+- [Vinuji Wathmavi]([https://github.com/teammate-username](https://github.com/VinujiWathmavi)
 
 ## 📄 License
 This project is part of the **IT3030 - PAF 2026** coursework. All rights reserved.
